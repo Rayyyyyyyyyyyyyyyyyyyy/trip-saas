@@ -1,0 +1,83 @@
+export const CANONICAL_TRIP_SCHEMA_VERSION = "canonical-trip.v2";
+export const SUPPORTED_CANONICAL_TRIP_SCHEMA_VERSIONS = Object.freeze([
+  "canonical-trip.v1",
+  CANONICAL_TRIP_SCHEMA_VERSION,
+]);
+
+export const canonicalTripFieldAllowlist = Object.freeze({
+  root: [
+    "schema_version",
+    "id",
+    "title",
+    "start_date",
+    "end_date",
+    "timezone",
+    "geography",
+    "days",
+    "entities",
+    "relationships",
+    "supporting_items",
+  ],
+  day: ["id", "date", "source_order", "label", "title", "subtitle", "leave_by"],
+  entity: [
+    "id",
+    "day_id",
+    "semantic_type",
+    "title",
+    "place",
+    "time",
+    "state",
+    "reservation",
+    "ticket",
+    "readiness",
+    "notes",
+    "actions",
+    "provenance",
+  ],
+  action: ["id", "kind", "label", "url"],
+  place: ["name", "address", "url", "unresolved"],
+  time: ["kind", "start", "end", "daypart", "raw_text", "crosses_midnight"],
+  state: ["optional", "tentative", "flexible", "unresolved"],
+  reservation: ["status", "reference", "detail", "todo_id"],
+  ticket: ["status", "reference", "detail", "todo_id"],
+  readiness: ["kind", "status", "detail", "todo_id"],
+  provenance: [
+    "origin",
+    "overridden_fields",
+    "source_id",
+    "locator_refs",
+  ],
+  relationship: [
+    "id",
+    "type",
+    "member_entity_ids",
+    "parent_entity_id",
+    "child_entity_ids",
+    "condition",
+  ],
+  supportingItem: ["id", "kind", "text", "url", "unresolved"],
+});
+
+export const reviewedCandidateConversionContract = Object.freeze({
+  sourceSchemaVersion: "parsed-trip-draft.v1",
+  targetSchemaVersion: CANONICAL_TRIP_SCHEMA_VERSION,
+  sourceTripPath: "trip",
+  excludedDraftPaths: [
+    "schema_version",
+    "findings",
+    "trip.source_refs",
+    "days[].source_refs",
+    "entities[].raw_label",
+    "entities[].place.raw_text",
+    "entities[].confidence",
+    "entities[].unresolved_fields",
+    "relationships[].source_refs",
+    "supporting_items[].source_refs",
+  ],
+  provenanceMapping: Object.freeze({ interpreter: "source", user: "user" }),
+  provenanceTraceMapping: Object.freeze({
+    sourceIdentity: "confirmation-context.sourceId",
+    locatorRefs: "entities[].source_refs",
+    unavailableOrigin: "legacy_unavailable",
+  }),
+});

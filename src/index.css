@@ -1,26 +1,102 @@
+@layer theme, base, mui, components, utilities;
+
 @import "tailwindcss";
 
-@theme {
-  --color-trip-paper: #f3f1eb;
-  --color-trip-surface: #fbfaf6;
-  --color-trip-ink: #20221f;
-  --color-trip-muted: #74766f;
-  --color-trip-moss: #536358;
-  --color-trip-acid: #d9ef6f;
-  --color-trip-orange: #e36f4d;
-  --font-serif-jp: "Noto Serif TC", ui-serif, serif;
-  --font-sans-jp: "Noto Sans TC", ui-sans-serif, system-ui, sans-serif;
+@font-face {
+  font-family: "Noto Serif TC";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("@fontsource/noto-serif-tc/files/noto-serif-tc-chinese-traditional-400-normal.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "Noto Serif TC";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("@fontsource/noto-serif-tc/files/noto-serif-tc-chinese-traditional-700-normal.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "Noto Serif TC";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 900;
+  src: url("@fontsource/noto-serif-tc/files/noto-serif-tc-chinese-traditional-900-normal.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "Noto Sans TC";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("@fontsource/noto-sans-tc/files/noto-sans-tc-chinese-traditional-400-normal.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "Noto Sans TC";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("@fontsource/noto-sans-tc/files/noto-sans-tc-chinese-traditional-500-normal.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "Noto Sans TC";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("@fontsource/noto-sans-tc/files/noto-sans-tc-chinese-traditional-700-normal.woff2")
+    format("woff2");
+}
+
+@theme inline {
+  --color-trip-paper: var(--trip-paper);
+  --color-trip-sunk: var(--trip-sunk);
+  --color-trip-ink: var(--trip-ink);
+  --color-trip-muted: var(--trip-muted);
+  --color-trip-faint: var(--trip-faint);
+  --color-trip-hairline: var(--trip-hairline);
+  --color-trip-anchor: var(--trip-anchor);
+  --color-trip-ready: var(--trip-ready);
+  --color-trip-alternative: var(--trip-alternative);
+  --color-trip-attention: var(--trip-attention);
+  --color-trip-movement: var(--trip-movement);
+
+  --font-editorial: "Noto Serif TC", Georgia, "Times New Roman", serif;
+  --font-utility:
+    "Noto Sans TC", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-source: ui-monospace, Menlo, Monaco, Consolas, monospace;
 }
 
 @layer base {
   html {
-    @apply scroll-smooth;
+    @apply scroll-smooth bg-trip-paper;
   }
+
   body {
-    @apply m-0 bg-trip-paper text-trip-ink antialiased;
+    @apply m-0 bg-trip-paper font-editorial text-trip-ink antialiased;
   }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-family: var(--font-utility);
+  }
+
   button,
   a {
     @apply touch-manipulation;
+  }
+
+  a {
+    text-underline-offset: 3px;
   }
 }

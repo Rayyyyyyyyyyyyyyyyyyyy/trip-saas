@@ -1,0 +1,452 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trip-runtime.local/schemas/parsed-trip-draft.v1.schema.json",
+  "title": "ParsedTripDraft v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "trip",
+    "days",
+    "entities",
+    "relationships",
+    "supporting_items",
+    "findings"
+  ],
+  "properties": {
+    "schema_version": { "const": "parsed-trip-draft.v1" },
+    "trip": { "$ref": "#/$defs/trip" },
+    "days": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/day" }
+    },
+    "entities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entity" }
+    },
+    "relationships": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relationship" }
+    },
+    "supporting_items": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/supportingItem" }
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    }
+  },
+  "$defs": {
+    "stableId": {
+      "description": "Stable ID: begin with an ASCII letter or digit; use only ASCII letters, digits, dot, underscore, colon and hyphen. Preserve supplied source/evidence IDs exactly; reuse entity IDs consistently in references. Use at least 1 character. Use at most 128 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "nullableText": {
+      "type": ["string", "null"]
+    },
+    "nullableDate": {
+      "description": "Source-supported full calendar date, or null when any year/month/day component is unknown. Preserve partial dates in day label/subtitle and source evidence; emit a missing-year Review finding.",
+      "anyOf": [
+        { "description": "Calendar date in YYYY-MM-DD, only when the source supports the complete year, month and day. Otherwise choose null and preserve partial date evidence for Review; never insert the current year.", "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        { "type": "null" }
+      ]
+    },
+    "nullableTime": {
+      "description": "Source-supported 24-hour HH:mm without seconds, or null. Null does not discard an ambiguous source time: keep its raw_text and source-linked Review finding.",
+      "anyOf": [
+        { "description": "24-hour clock in HH:mm without seconds, with hours 00-23 and minutes 00-59. Use only source-supported precision; if meridiem is ambiguous choose null and retain raw_text with a Review finding.", "type": "string", "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$" },
+        { "type": "null" }
+      ]
+    },
+    "sourceRefs": {
+      "description": "No duplicate items; preserve meaningful source ordering.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/stableId" }
+    },
+    "trip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "start_date",
+        "end_date",
+        "timezone",
+        "geography",
+        "source_refs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "title": { "$ref": "#/$defs/nullableText" },
+        "start_date": { "$ref": "#/$defs/nullableDate" },
+        "end_date": { "$ref": "#/$defs/nullableDate" },
+        "timezone": { "$ref": "#/$defs/nullableText" },
+        "geography": {
+          "description": "No duplicate items; preserve meaningful source ordering.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "description": "Use at least 1 character.", "type": "string", "minLength": 1 }
+        },
+        "source_refs": { "$ref": "#/$defs/sourceRefs" }
+      }
+    },
+    "day": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "date",
+        "source_order",
+        "label",
+        "title",
+        "subtitle",
+        "leave_by",
+        "source_refs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "date": { "$ref": "#/$defs/nullableDate" },
+        "source_order": { "type": "integer", "minimum": 0 },
+        "label": { "$ref": "#/$defs/nullableText" },
+        "title": { "$ref": "#/$defs/nullableText" },
+        "subtitle": { "$ref": "#/$defs/nullableText" },
+        "leave_by": { "$ref": "#/$defs/nullableTime" },
+        "source_refs": { "$ref": "#/$defs/sourceRefs" }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "label", "url"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "kind": { "enum": ["map", "restaurant", "reference"] },
+        "label": { "description": "Use at least 1 character.", "type": "string", "minLength": 1 },
+        "url": { "description": "HTTPS URL beginning exactly with https:// and supported by the source. Preserve the exact supplied URL; never invent or resolve a relative path. If no valid source-supported HTTPS URL exists, omit the action; this required field cannot be null.", "type": "string", "pattern": "^https://" }
+      }
+    },
+    "place": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "address", "url", "raw_text", "unresolved"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nullableText" },
+        "address": { "$ref": "#/$defs/nullableText" },
+        "url": {
+          "description": "Source-supported HTTPS URL or null. Preserve exact supplied links; relative or unavailable asset references belong in raw_text/text with evidence, not this URL field.",
+          "anyOf": [
+            { "description": "HTTPS URL beginning exactly with https:// and supported by the source. Preserve the exact supplied URL; never invent or resolve a relative path.", "type": "string", "pattern": "^https://" },
+            { "type": "null" }
+          ]
+        },
+        "raw_text": { "$ref": "#/$defs/nullableText" },
+        "unresolved": { "type": "boolean" }
+      }
+    },
+    "time": {
+      "description": "For an ambiguous clock with no supported meridiem/daypart, use kind=none with start/end/daypart null, retain raw_text and emit a focused Review finding. If only a daypart is supported use kind=daypart with null start/end. Never turn an exact guess into approximate.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "start",
+        "end",
+        "daypart",
+        "raw_text",
+        "crosses_midnight"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "exact",
+            "approximate",
+            "range",
+            "daypart",
+            "none",
+            "open_ended",
+            "all_day"
+          ]
+        },
+        "start": { "$ref": "#/$defs/nullableTime" },
+        "end": { "$ref": "#/$defs/nullableTime" },
+        "daypart": {
+          "type": ["string", "null"],
+          "enum": ["morning", "afternoon", "evening", "night", "unknown", null]
+        },
+        "raw_text": { "$ref": "#/$defs/nullableText" },
+        "crosses_midnight": { "type": "boolean" }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["optional", "tentative", "flexible", "unresolved"],
+      "properties": {
+        "optional": { "type": "boolean" },
+        "tentative": { "type": "boolean" },
+        "flexible": { "type": "boolean" },
+        "unresolved": { "type": "boolean" }
+      }
+    },
+    "reservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reference", "detail", "todo_id"],
+      "properties": {
+        "status": {
+          "enum": [
+            "unknown",
+            "not_required",
+            "action_needed",
+            "pending",
+            "confirmed",
+            "cancelled"
+          ]
+        },
+        "reference": { "$ref": "#/$defs/nullableText" },
+        "detail": { "$ref": "#/$defs/nullableText" },
+        "todo_id": {
+          "anyOf": [{ "$ref": "#/$defs/stableId" }, { "type": "null" }]
+        }
+      }
+    },
+    "ticket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reference", "detail", "todo_id"],
+      "properties": {
+        "status": {
+          "enum": [
+            "unknown",
+            "not_required",
+            "action_needed",
+            "pending",
+            "ready",
+            "unavailable"
+          ]
+        },
+        "reference": { "$ref": "#/$defs/nullableText" },
+        "detail": { "$ref": "#/$defs/nullableText" },
+        "todo_id": {
+          "anyOf": [{ "$ref": "#/$defs/stableId" }, { "type": "null" }]
+        }
+      }
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "status", "detail", "todo_id"],
+      "properties": {
+        "kind": {
+          "enum": ["reservation", "ticket", "document", "payment", "other"]
+        },
+        "status": {
+          "enum": [
+            "unknown",
+            "not_required",
+            "action_needed",
+            "pending",
+            "ready",
+            "blocked"
+          ]
+        },
+        "detail": { "$ref": "#/$defs/nullableText" },
+        "todo_id": {
+          "anyOf": [{ "$ref": "#/$defs/stableId" }, { "type": "null" }]
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origin", "overridden_fields"],
+      "properties": {
+        "origin": { "enum": ["interpreter", "user"] },
+        "overridden_fields": {
+          "description": "No duplicate items; preserve meaningful source ordering.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "description": "Use at least 1 character.", "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "entity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "day_id",
+        "semantic_type",
+        "title",
+        "raw_label",
+        "place",
+        "time",
+        "state",
+        "reservation",
+        "ticket",
+        "readiness",
+        "notes",
+        "actions",
+        "unresolved_fields",
+        "confidence",
+        "provenance",
+        "source_refs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "day_id": {
+          "anyOf": [{ "$ref": "#/$defs/stableId" }, { "type": "null" }]
+        },
+        "semantic_type": {
+          "enum": [
+            "flight",
+            "accommodation",
+            "transit",
+            "activity",
+            "restaurant",
+            "free_time",
+            "reservation",
+            "ticket",
+            "preparation",
+            "note",
+            "unknown"
+          ]
+        },
+        "title": { "description": "Use at least 1 character.", "type": "string", "minLength": 1 },
+        "raw_label": { "$ref": "#/$defs/nullableText" },
+        "place": { "$ref": "#/$defs/place" },
+        "time": { "$ref": "#/$defs/time" },
+        "state": { "$ref": "#/$defs/state" },
+        "reservation": {
+          "anyOf": [{ "$ref": "#/$defs/reservation" }, { "type": "null" }]
+        },
+        "ticket": {
+          "anyOf": [{ "$ref": "#/$defs/ticket" }, { "type": "null" }]
+        },
+        "readiness": {
+          "anyOf": [{ "$ref": "#/$defs/readiness" }, { "type": "null" }]
+        },
+        "notes": {
+          "type": "array",
+          "items": { "description": "Use at least 1 character.", "type": "string", "minLength": 1 }
+        },
+        "actions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/action" }
+        },
+        "unresolved_fields": {
+          "description": "No duplicate items; preserve meaningful source ordering.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "description": "Use at least 1 character.", "type": "string", "minLength": 1 }
+        },
+        "confidence": { "enum": ["high", "medium", "low", "unknown"] },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "source_refs": { "$ref": "#/$defs/sourceRefs" }
+      }
+    },
+    "relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "member_entity_ids",
+        "parent_entity_id",
+        "child_entity_ids",
+        "condition",
+        "source_refs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "type": {
+          "enum": [
+            "sequence",
+            "alternative",
+            "conditional",
+            "fallback",
+            "parent_child"
+          ]
+        },
+        "member_entity_ids": {
+          "description": "No duplicate items; preserve meaningful source ordering.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        },
+        "parent_entity_id": {
+          "anyOf": [{ "$ref": "#/$defs/stableId" }, { "type": "null" }]
+        },
+        "child_entity_ids": {
+          "description": "No duplicate items; preserve meaningful source ordering.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        },
+        "condition": { "$ref": "#/$defs/nullableText" },
+        "source_refs": { "$ref": "#/$defs/sourceRefs" }
+      }
+    },
+    "supportingItem": {
+      "description": "Preserve unavailable relative images as kind=asset, with the original reference in text, source_refs, unresolved=true and url=null. Missing assets alone do not make a trip insufficient.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "text", "url", "unresolved", "source_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "kind": {
+          "enum": ["reference", "instruction", "timetable", "asset", "note", "other"]
+        },
+        "text": { "$ref": "#/$defs/nullableText" },
+        "url": {
+          "description": "Source-supported HTTPS URL or null. Preserve exact supplied links; relative or unavailable asset references belong in raw_text/text with evidence, not this URL field.",
+          "anyOf": [
+            { "description": "HTTPS URL beginning exactly with https:// and supported by the source. Preserve the exact supplied URL; never invent or resolve a relative path.", "type": "string", "pattern": "^https://" },
+            { "type": "null" }
+          ]
+        },
+        "unresolved": { "type": "boolean" },
+        "source_refs": { "$ref": "#/$defs/sourceRefs" }
+      }
+    },
+    "finding": {
+      "description": "A focused uncertainty or review issue. Link source_refs to exact evidence-unit IDs and entity_refs to affected entities where applicable. Use blocking=true for decisions requiring user resolution before confirmation; unavailable optional assets may be non-blocking.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "severity",
+        "code",
+        "message",
+        "blocking",
+        "entity_refs",
+        "source_refs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "severity": { "enum": ["error", "warning", "review", "info"] },
+        "code": { "description": "Finding code containing only uppercase ASCII letters, digits and underscores. Use at least 1 character.", "type": "string", "minLength": 1, "pattern": "^[A-Z0-9_]+$" },
+        "message": { "description": "Use at least 1 character.", "type": "string", "minLength": 1 },
+        "blocking": { "type": "boolean" },
+        "entity_refs": {
+          "description": "No duplicate items; preserve meaningful source ordering.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        },
+        "source_refs": {
+          "description": "No duplicate items; preserve meaningful source ordering.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        }
+      }
+    }
+  }
+}

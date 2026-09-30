@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trip-runtime.local/schemas/unified-source-document.v1.schema.json",
+  "title": "UnifiedSourceDocument v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_id",
+    "display_name",
+    "input_mode",
+    "source_format",
+    "evidence_units",
+    "extraction_findings"
+  ],
+  "properties": {
+    "schema_version": { "const": "unified-source-document.v1" },
+    "source_id": { "$ref": "#/$defs/stableId" },
+    "display_name": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "input_mode": { "enum": ["markdown_file", "pasted_markdown"] },
+    "source_format": { "enum": ["markdown", "tabular"] },
+    "evidence_units": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/evidenceUnit" }
+    },
+    "extraction_findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/extractionFinding" }
+    }
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "locator": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "\\S"
+    },
+    "evidenceUnit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_order",
+        "parent_ref",
+        "locator",
+        "raw_value",
+        "display_value",
+        "links",
+        "structural_evidence"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "source_order": { "type": "integer", "minimum": 0 },
+        "parent_ref": {
+          "oneOf": [{ "$ref": "#/$defs/stableId" }, { "type": "null" }]
+        },
+        "locator": { "$ref": "#/$defs/locator" },
+        "raw_value": { "type": "string", "maxLength": 200000 },
+        "display_value": { "type": "string", "maxLength": 200000 },
+        "links": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceLink" }
+        },
+        "structural_evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/structuralEvidence" }
+        }
+      }
+    },
+    "sourceLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "label", "target"],
+      "properties": {
+        "kind": { "enum": ["link", "image"] },
+        "label": { "type": "string", "maxLength": 2048 },
+        "target": { "type": "string", "minLength": 1, "maxLength": 2048 }
+      }
+    },
+    "structuralEvidence": {
+      "oneOf": [
+        { "$ref": "#/$defs/markdownStructuralEvidence" },
+        { "$ref": "#/$defs/tabularStructuralEvidence" }
+      ]
+    },
+    "markdownStructuralEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_kind",
+        "block_type",
+        "depth",
+        "line_start",
+        "line_end"
+      ],
+      "properties": {
+        "evidence_kind": { "const": "markdown_block" },
+        "block_type": {
+          "enum": [
+            "blockquote",
+            "code",
+            "heading",
+            "list_item",
+            "paragraph",
+            "table",
+            "thematic_break"
+          ]
+        },
+        "depth": { "type": "integer", "minimum": 0 },
+        "line_start": { "type": "integer", "minimum": 1 },
+        "line_end": { "type": "integer", "minimum": 1 },
+        "heading_level": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "list_marker": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "sequence_like": { "type": "boolean" },
+        "table_column_count": { "type": "integer", "minimum": 0 },
+        "table_row_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "tabularStructuralEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_kind",
+        "sheet_id",
+        "sheet_name",
+        "sheet_order",
+        "row_start",
+        "row_end",
+        "column_start",
+        "column_end",
+        "header_ref",
+        "merge_ref"
+      ],
+      "properties": {
+        "evidence_kind": { "const": "tabular_region" },
+        "sheet_id": { "$ref": "#/$defs/stableId" },
+        "sheet_name": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "sheet_order": { "type": "integer", "minimum": 0 },
+        "row_start": { "type": "integer", "minimum": 1 },
+        "row_end": { "type": "integer", "minimum": 1 },
+        "column_start": { "type": "integer", "minimum": 1 },
+        "column_end": { "type": "integer", "minimum": 1 },
+        "header_ref": {
+          "oneOf": [{ "$ref": "#/$defs/stableId" }, { "type": "null" }]
+        },
+        "merge_ref": {
+          "oneOf": [{ "$ref": "#/$defs/locator" }, { "type": "null" }]
+        },
+        "cached_display_value": { "type": "string", "maxLength": 200000 },
+        "formula": { "type": "string", "maxLength": 8192 },
+        "hyperlink_target": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      }
+    },
+    "extractionFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "severity",
+        "message",
+        "evidence_unit_ref",
+        "locator",
+        "target"
+      ],
+      "properties": {
+        "code": { "enum": ["MISSING_RELATIVE_ASSET"] },
+        "severity": { "enum": ["warning", "error"] },
+        "message": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "evidence_unit_ref": { "$ref": "#/$defs/stableId" },
+        "locator": { "$ref": "#/$defs/locator" },
+        "target": { "type": "string", "minLength": 1, "maxLength": 2048 }
+      }
+    }
+  }
+}

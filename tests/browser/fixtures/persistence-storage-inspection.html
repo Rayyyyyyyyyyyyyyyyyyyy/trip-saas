@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Persistence storage inspection</title>
+  </head>
+  <body data-status="running">
+    <pre id="result"></pre>
+    <script type="module">
+      import { goldenOsakaCanonicalTrip } from "/src/fixtures/golden/osakaCanonicalTrip.ts";
+      import { createChecklistRepository } from "/src/persistence/checklistRepository.ts";
+      import { createConfirmedTripRepository } from "/src/persistence/confirmedTripRepository.ts";
+      import { createGeminiCredentialRepository } from "/src/persistence/geminiCredentialRepository.ts";
+
+      const CONFIRMED_DATABASE = "persistence-inspection-confirmed";
+      const CREDENTIAL_DATABASE = "persistence-inspection-credential";
+      const PHASE_KEY = "persistence-inspection-phase";
+      const CREDENTIAL = "synthetic-credential-plaintext-sentinel";
+      const FORBIDDEN = [
+        "raw-source-sentinel",
+        "source-excerpt-sentinel",
+        "provider-response-sentinel",
+        "review-session-sentinel",
+      ];
+      const result = document.querySelector("#result");
+
+      const confirmedTripRepository = createConfirmedTripRepository({
+        databaseName: CONFIRMED_DATABASE,
+      });
+      const credentialRepository = createGeminiCredentialRepository({
+        databaseName: CREDENTIAL_DATABASE,
+      });
+      const checklistRepository = createChecklistRepository(localStorage);
+
+      function requestResult(request) {
+        return new Promise((resolve, reject) => {
+          request.addEventListener("success", () => resolve(request.result), {
+            once: true,
+          });
+          request.addEventListener("error", () => reject(request.error), {
+            once: true,
+          });
+        });
+      }
+
+      async function inspectDatabase(databaseName) {
+        const database = await requestResult(indexedDB.open(databaseName));
+        const storeNames = [...database.objectStoreNames];
+        const transaction = database.transaction(storeNames, "readonly");
+        const requests = storeNames.map((storeName) =>
+          transaction.objectStore(storeName).getAll(),
+        );
+        const records = await Promise.all(requests.map(requestResult));
+        database.close();
+        return Object.fromEntries(
+          storeNames.map((storeName, index) => [storeName, records[index]]),
+        );
+      }
+
+      async function deleteDatabase(databaseName) {
+        await requestResult(indexedDB.deleteDatabase(databaseName));
+      }
+
+      async function cleanup() {
+        await confirmedTripRepository.clear();
+        await credentialRepository.clear();
+        await checklistRepository.clearAllTripState();
+        await deleteDatabase(CONFIRMED_DATABASE);
+        await deleteDatabase(CREDENTIAL_DATABASE);
+      }
+
+      async function run() {
+        try {
+          if (sessionStorage.getItem(PHASE_KEY) !== "inspect") {
+            await confirmedTripRepository.clear();
+            await credentialRepository.clear();
+            await checklistRepository.clearAllTripState();
+            const tracedTrip = structuredClone(goldenOsakaCanonicalTrip);
+            tracedTrip.entities[0].provenance = {
+              origin: "source",
+              overridden_fields: [],
+              source_id: "source:persistence-inspection",
+              locator_refs: ["source:persistence-inspection:unit:0001"],
+            };
+            await confirmedTripRepository.replaceActive(tracedTrip);
+            await credentialRepository.save(CREDENTIAL);
+            checklistRepository.saveState(goldenOsakaCanonicalTrip.id, {
+              hotel: true,
+              "usj-ticket": false,
+            });
+
+            const contaminated = structuredClone(goldenOsakaCanonicalTrip);
+            contaminated.id = "contaminated-trip";
+            contaminated.rawSource = FORBIDDEN[0];
+            contaminated.sourceExcerpt = FORBIDDEN[1];
+            contaminated.providerResponse = FORBIDDEN[2];
+            contaminated.reviewSession = FORBIDDEN[3];
+            let contaminatedWriteRejected = false;
+            try {
+              await confirmedTripRepository.replaceActive(contaminated);
+            } catch {
+              contaminatedWriteRejected = true;
+            }
+            sessionStorage.setItem(
+              "persistence-inspection-contaminated-rejected",
+              String(contaminatedWriteRejected),
+            );
+            sessionStorage.setItem(PHASE_KEY, "inspect");
+            location.reload();
+            return;
+          }
+
+          const active = await confirmedTripRepository.loadActive();
+          const credential = await credentialRepository.load();
+          const confirmedRecords = await inspectDatabase(CONFIRMED_DATABASE);
+          const credentialRecords = await inspectDatabase(CREDENTIAL_DATABASE);
+          const durableSnapshot = JSON.stringify({
+            confirmedRecords,
+            credentialRecords,
+            localStorage: { ...localStorage },
+          });
+          const forbiddenAbsent = FORBIDDEN.every(
+            (sentinel) => !durableSnapshot.includes(sentinel),
+          );
+          const storedTrip = confirmedRecords.trips?.[0]?.trip;
+          const storedProvenance = storedTrip?.entities?.[0]?.provenance;
+          const details = {
+            activeTripPreserved:
+              active.status === "ready" &&
+              active.trip.id === goldenOsakaCanonicalTrip.id,
+            contaminatedWriteRejected:
+              sessionStorage.getItem(
+                "persistence-inspection-contaminated-rejected",
+              ) === "true",
+            credentialPlaintextAbsent: !durableSnapshot.includes(CREDENTIAL),
+            credentialReloaded:
+              credential.status === "ready" &&
+              credential.credential === CREDENTIAL,
+            forbiddenSourceAndReviewStateAbsent: forbiddenAbsent,
+            provenanceAllowlistExact:
+              storedTrip?.schema_version === "canonical-trip.v2" &&
+              JSON.stringify(Object.keys(storedProvenance ?? {}).sort()) ===
+                JSON.stringify(
+                  [
+                    "locator_refs",
+                    "origin",
+                    "overridden_fields",
+                    "source_id",
+                  ].sort(),
+                ) &&
+              storedProvenance?.source_id ===
+                "source:persistence-inspection" &&
+              storedProvenance?.locator_refs?.[0] ===
+                "source:persistence-inspection:unit:0001",
+          };
+          const passed = Object.values(details).every(Boolean);
+
+          document.body.dataset.status = passed ? "passed" : "failed";
+          result.textContent = JSON.stringify(details, null, 2);
+          await cleanup();
+        } catch (error) {
+          document.body.dataset.status = "failed";
+          result.textContent = JSON.stringify(
+            {
+              errorName: error instanceof Error ? error.name : "UnknownError",
+              message: error instanceof Error ? error.message : String(error),
+            },
+            null,
+            2,
+          );
+        }
+      }
+
+      void run();
+    </script>
+  </body>
+</html>

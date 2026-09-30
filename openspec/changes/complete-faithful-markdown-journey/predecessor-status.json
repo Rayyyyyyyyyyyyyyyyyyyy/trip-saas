@@ -1,0 +1,38 @@
+{
+  "date": "2026-09-07",
+  "status": "transferred-not-accepted",
+  "predecessors": [
+    {
+      "name": "build-trip-runtime-v0",
+      "root": "/Users/ray.shao/oosaka-trip-saas/openspec/changes/build-trip-runtime-v0",
+      "open": [
+        "9.7",
+        "9.8",
+        "14.2",
+        "14.3",
+        "14.4"
+      ],
+      "completed": 106,
+      "task_sha256_before_transfer": "75e72dd7421f4cac5436f77c51bb83f9cc7d13eacc9c532114f103413f5d045f"
+    },
+    {
+      "name": "harden-source-to-render-boundaries",
+      "root": "/Users/ray.shao/oosaka-trip-saas/openspec/changes/harden-source-to-render-boundaries",
+      "open": [
+        "10.5"
+      ],
+      "completed": 59,
+      "task_sha256_before_transfer": "512fc8639450a0b9e1235dc4f39278b84c88857e38218bc2037f51a58c5dc7db"
+    },
+    {
+      "name": "fix-gemini-schema-failure-recovery",
+      "root": "/Users/ray.shao/oosaka-trip-saas/openspec/changes/fix-gemini-schema-failure-recovery",
+      "open": [
+        "5.3",
+        "8.4"
+      ],
+      "completed": 33,
+      "task_sha256_before_transfer": "c4d7b76ab2a41962401c45b35327e4362f076e28755555de3f3dc9b1104fb298"
+    }
+  ]
+}

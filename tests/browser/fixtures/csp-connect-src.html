@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; base-uri 'self'; connect-src 'self' https://generativelanguage.googleapis.com; font-src 'self' data:; form-action 'self'; frame-src 'none'; img-src 'self' data: blob:; manifest-src 'self'; media-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self'"
+    />
+    <title>Credential CSP compatibility spike</title>
+  </head>
+  <body data-status="running">
+    <pre id="result"></pre>
+    <script type="module" src="./csp-connect-src.js"></script>
+  </body>
+</html>

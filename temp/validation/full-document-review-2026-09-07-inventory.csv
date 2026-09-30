@@ -1,0 +1,163 @@
+path,role,read_status,bytes,sha256_at_review
+AGENTS.md,agent/repository entry instructions,full text read,25132,bf224a2e774cca0377b31be356c5a270edd2ee07a16ecfd98316a14f575b89a4
+CLAUDE.md,agent/repository entry instructions,full text read,7629,c0498a581e54c8202bb54fce0a08443637b02d568df73dc7e3b1d9bd6ebb696c
+CONTEXT.md,agent/repository entry instructions,full text read,5581,3ed6b0043bcfe140e705967d487f4291f6b90788804197d9d8fcfebe59332b13
+README.md,agent/repository entry instructions,full text read,2950,f9ebf5cdf9ef80f98571b1c61295ec712ce633400837304cffc1b3b03561115d
+openspec/changes/archive/2026-09-07-apply-newspaper-ui/design.md,archived change/historical evidence,full text read,12969,de2a18f27c559370af79e61992e97f15cd7852980f35ebfe169283214f366504
+openspec/changes/archive/2026-09-07-apply-newspaper-ui/proposal.md,archived change/historical evidence,full text read,3169,a43a8c79c8b85e89aee8a96fe12d05e390dc2ff76f3a3abe5acd46ddc7c99f2c
+openspec/changes/archive/2026-09-07-apply-newspaper-ui/specs/newspaper-ui-system/spec.md,archived change/historical evidence,full common text read in openspec/specs; all differences read via unified diff,7326,21ee65ba46b5c3a12489504a0f65ecac11c42002d5526b1aa4431450f2f31fd4
+openspec/changes/archive/2026-09-07-apply-newspaper-ui/specs/trip-result-ui/spec.md,archived change/historical evidence,full common text read in openspec/specs; all differences read via unified diff,6952,5b6fb3fc18d6614ce940c68211c962eefb79e0a23670dc936005c51235c7dac2
+openspec/changes/archive/2026-09-07-apply-newspaper-ui/tasks.md,archived change/historical evidence,full text read,9864,032a1ea9b2fb908da6359b40255fc7442c60ed61752f53f14f587d94523dacf8
+openspec/changes/archive/2026-09-07-apply-newspaper-ui/traceability.md,archived change/historical evidence,full text read,3993,fef5943ffa2580252cb4aaccf89d00033d8b16daffdadf9b0797a1d4d43935c7
+openspec/changes/archive/2026-09-07-apply-newspaper-ui/validation.md,archived change/historical evidence,full text read,7540,0c763b6195e69cd334ae5f8df07c64e62766639d581ca885c18e105a3499ed8c
+openspec/changes/build-trip-runtime-v0/README.md,active change contract/history/status,full text read,213,1a8b5e4664d186892839d21faff53bbb0b2924fea795fd563b094728c9c9e646
+openspec/changes/build-trip-runtime-v0/design.md,active change contract/history/status,full text read,22874,7441dbe65831ad5d4e770281e53d0a124eb45d1840172d442225c8fee8f165f2
+openspec/changes/build-trip-runtime-v0/implementation-notes.md,active change contract/history/status,full text read,24769,f18e8229be9011308c97c2d22b2e4ba4e21a934d069e6082935bfb9ab47a79e2
+openspec/changes/build-trip-runtime-v0/proposal.md,active change contract/history/status,full text read,5039,cc5b595aa6fc61733022d3d2fc131f554a6bb4e052cf17912bf665b7f81f2ff0
+openspec/changes/build-trip-runtime-v0/specs/evidence-backed-trip-review/spec.md,active change contract/history/status,full common text read in openspec/specs; all differences read via unified diff,5992,dd4809622c9b4b4be0ecd5796e6d2c7094726818ee7e4d12449b1250d4b062ed
+openspec/changes/build-trip-runtime-v0/specs/local-canonical-trip/spec.md,active change contract/history/status,full common text read in openspec/specs; all differences read via unified diff,5881,98cade43acd06c080f92bce730a58e33558727ccacec0acf3b6a33188f1ac04b
+openspec/changes/build-trip-runtime-v0/specs/markdown-source-intake/spec.md,active change contract/history/status,full common text read in openspec/specs; all differences read via unified diff,6426,d9a70e123b7abb229d81a6f021d22e2eb682a2dff7e9519c39eb51deb5fcdd8e
+openspec/changes/build-trip-runtime-v0/specs/trip-result-ui/spec.md,active change contract/history/status,full common text read in openspec/specs; all differences read via unified diff,9458,2b8cb1bbcfdc7f1918fc0c49e5de6762ad76e6af0f1f2df51c82f28f3da6200a
+openspec/changes/build-trip-runtime-v0/specs/trip-semantic-interpretation/spec.md,active change contract/history/status,full common text read in openspec/specs; all differences read via unified diff,8319,4009f8d786e3b318c652e28aeab355b959dde5d49425d31207dfbeff86e01e36
+openspec/changes/build-trip-runtime-v0/tasks.md,active change contract/history/status,full text read,18687,75e72dd7421f4cac5436f77c51bb83f9cc7d13eacc9c532114f103413f5d045f
+openspec/changes/build-trip-runtime-v0/traceability.md,active change contract/history/status,full text read,5632,4038adb3fb2255a398215fb795046ba52bdf6c955e27fda25e0dc8ed7b8c2d95
+openspec/changes/fix-gemini-schema-failure-recovery/design.md,active change contract/history/status,full text read,18225,a9cb1c54ddc0c597948d9486c95d8b9c07747620140d3e2e4c9a0600246ef632
+openspec/changes/fix-gemini-schema-failure-recovery/proposal.md,active change contract/history/status,full text read,3823,32c55fcdcb5076221b526b0e1fbd9f3334f2476d174f5db1aec9424f53073fdc
+openspec/changes/fix-gemini-schema-failure-recovery/specs/gemini-structured-interpretation/spec.md,active change contract/history/status,full text read,10533,4acd3b1ad9a58670da9aad257e35d63d5a57c51078ecf73fa3750518ca875dc3
+openspec/changes/fix-gemini-schema-failure-recovery/specs/intake-failure-recovery/spec.md,active change contract/history/status,full text read,4521,11bc88bf5d33a26427fcdd1ab9e01dafea3140af80fdb8eca1b9ab14677e2fb3
+openspec/changes/fix-gemini-schema-failure-recovery/tasks.md,active change contract/history/status,full text read,9587,c4d7b76ab2a41962401c45b35327e4362f076e28755555de3f3dc9b1104fb298
+openspec/changes/fix-gemini-schema-failure-recovery/validation.md,active change contract/history/status,full text read,11836,6876123ac5dcd806e3b1e1da736e6280e0c45b5ffa5ac8236d5cc93ecdd7bf16
+openspec/changes/harden-source-to-render-boundaries/design.md,active change contract/history/status,full text read,23761,9859bb797d4c4d1293575a2dce528c0e72aef06e0e811bdd32242e88208e7516
+openspec/changes/harden-source-to-render-boundaries/proposal.md,active change contract/history/status,full text read,5849,e8a0e07c37f20359542f38d7ebee11bc9cea49537d4cb842326d26c3d627a234
+openspec/changes/harden-source-to-render-boundaries/specs/deterministic-result-placement/spec.md,active change contract/history/status,full common text read in openspec/specs; all differences read via unified diff,4386,e578afc66e789e3bfa9744caa480ab3b9e44cdf403f3bf3098c328781186fe22
+openspec/changes/harden-source-to-render-boundaries/specs/trip-interpretation-workflow/spec.md,active change contract/history/status,full common text read in openspec/specs; all differences read via unified diff,8612,c61d7acb9138d1298914c6f6c00fe705d3d70daba82a32278415e5f24c6ba26d
+openspec/changes/harden-source-to-render-boundaries/specs/validated-source-document/spec.md,active change contract/history/status,full common text read in openspec/specs; all differences read via unified diff,4794,bdd112b445d35729772c1ae573e5d0844d040b32c1aa0e25a78f5df0d04ead41
+openspec/changes/harden-source-to-render-boundaries/tasks.md,active change contract/history/status,full text read,12765,512fc8639450a0b9e1235dc4f39278b84c88857e38218bc2037f51a58c5dc7db
+openspec/changes/harden-source-to-render-boundaries/validation.md,active change contract/history/status,full text read,7989,10b4a9d93115c1831e555a4d77c45c9d3970c8140284e5b60d3fd4d598c7de87
+openspec/specs/deterministic-result-placement/spec.md,current capability contract,full text read,4566,1fee9de8090199c040eec0a06e750bbb77913c03c1d8bae695f1881cc8a17313
+openspec/specs/evidence-backed-trip-review/spec.md,current capability contract,full text read,6232,6a865e92ffefac797545c06bd6a0a505a2503bf6e9f69c7190054718be18ddc9
+openspec/specs/local-canonical-trip/spec.md,current capability contract,full text read,6081,154dd1f82b3c18fa671df118b59aef8348295408e1eb039944a95d743930e855
+openspec/specs/markdown-source-intake/spec.md,current capability contract,full text read,6656,3b7da901f1b6c5a3f5cb2805efb5ab27473e3286700fa8e235310a7ec4e4c17e
+openspec/specs/newspaper-ui-system/spec.md,current capability contract,full text read,7451,92ef24f3d9cef77ef90221e9ab57813d29ce1d2c09cb5a8d52979953d85ef0e8
+openspec/specs/trip-interpretation-workflow/spec.md,current capability contract,full text read,8843,a284fabbca23193cb5808885c12a773980dab2df32c2931ae9a4c2761b2c99c4
+openspec/specs/trip-result-ui/spec.md,current capability contract,full text read,12909,2294a98ebdc03a60f90fbcc6983521041095adc86c299781fb1aaae4e4c64bf8
+openspec/specs/trip-semantic-interpretation/spec.md,current capability contract,full text read,8584,6ce546a7e4d9b54ae4d5dbe742e3bd3b2d4202ff82acb260440060fe2e6f762b
+openspec/specs/validated-source-document/spec.md,current capability contract,full text read,5038,8f15954ec07e796dd14b9afdb2a794685d4cf91600d3911697b31d0c602f528b
+spec/00_README.md,current product contract,full text read,7109,c5a7652617e353bae15996baec27cd9aec6048cb1898f1f6a14499f2892b9a44
+spec/01_CANONICAL_CONTEXT.md,current product contract,full text read,16498,030e824533dff03212a2bd3f75528496d20a7997fedccd2b07c910efc805dcaf
+spec/03_PIPELINE_SPEC.md,current product contract,full text read,28662,fd522b1d41b1c150d55dbc34aba39a7f005e982ce7089010873d75d6a164675b
+spec/05_V0_IMPLEMENTATION_PLAN.md,current product contract,full text read,18116,ce0050bbfe705dfeb967d881fa7d2a79ab4200ffef51313fa2cfed5f2fee4345
+spec/06_RESULT_UI_SPEC.md,current product contract,full text read,18295,c0a4a86f7d286f559c3829e411d06af125c4a34dd5e4c25084f6cb2026a308f6
+spec/07_FUNCTIONAL_SPEC.md,current product contract,full text read,19904,56151acb935ca76754357b5235239730c2d930147c803f6b877be1dc5d16d508
+spec/08_PRODUCT_VALIDATION_PLAN.md,current product contract,full text read,10831,8d25ffdbebc7795df4c1804ac3ab978dd164d3899815027d71c45aed64180aed
+spec/MVP_UI_SCOPE_REPORT.md,current product contract,full text read,4994,2d41709d0f04eb3edb7533fd2621718293404df081f6f83dff4515492ec97ca2
+spec/TRIP_RUNTIME_SEMANTIC_INTERPRETER.md,current product contract,full text read,7170,44a0879948e99a6ed3cad96ecc49399a66b8b130811c002d0f8acfd6bef039b1
+src/app/README.md,module ownership,full text read,6245,0c5b12584fab28e906e1dc3f228189e3295046aa1803b26c46d5ac214528f6ab
+src/components/README.md,module ownership,full text read,1510,2d37b78b4645a00cff90906c38f9a0e5f718a686986cf7cf9259fadec26643a7
+src/domain/source/README.md,module ownership,full text read,1857,b565cca1fb44db9953d63ef875fdf062d3e8b8e256b7c52a4ff6c3192244cc4e
+src/domain/trip/README.md,module ownership,full text read,3040,3577350f7244ad375bbe530cf44cd799f94e1bd86e9ce4a305f70d076490466e
+src/features/import/README.md,module ownership,full text read,2861,fec79b2ef3ae04adcd6bcd6902bb5cbc2ab9481259f7f0a1a7d48b489a39c11c
+src/features/result/README.md,module ownership,full text read,3711,b4a85c9a71a1c5c2cdb842c9ab5c301cd4bf867cd2df41ce73a1e5933d397817
+src/features/review/README.md,module ownership,full text read,2322,1c594e6a41b59d08ff293a505c8fb0e52874ff60f356e49444ba92f7e829cf76
+src/fixtures/golden/README.md,module ownership,full text read,164,0334111bc86496110fa62f67f7625244270524cdaad50ea493056027f40d293c
+src/integrations/gemini/README.md,module ownership,full text read,2605,ff9c77263239917f932e33902df15d16641aab73ef270276d72eb5c144c0f0a4
+src/persistence/README.md,module ownership,full text read,3418,4a522f29b756d38fdd4918491dbcf75d9d43f1cf9977f60ce2e6e63db4c09647
+temp/02_INPUT_RESEARCH.md,current research/source evidence,full text read,48737,9acacedd8d9afa5d5d2aa5c812bcfd77da233ed852e3823dc5c4395288cf8055
+temp/04_RESPONSE_PAGE_RESEARCH.md,current research/source evidence,full text read,8883,ff185b39026ca3bac8791f3eb7ea340c9a756bf4418dc0de17cb652fa7d8ab10
+temp/Mobile app and web design/SPEC_DIFF.md,historical prototype/reference (not current authority),full text read,6989,417dd7facaf55a25cee1b3575089b83a970c61667c9a33723cf52d9967e1a63a
+temp/Mobile app and web design/_ds/organic-d0bf6c77-c870-4e3e-aac6-1db255313bc5/readme.md,historical prototype/reference (not current authority),full text read,7019,3f0172a1a501b0966b0acd20b3737098a9ca919943c354c6aab4bcb28e2a0956
+temp/Mobile app and web design/github.md,historical prototype/reference (not current authority),full text read,1168,c32bf8f5a4aabc5a870f444ddbeb44518b10d9f2a0212ebf478549ef0f4d1bdc
+temp/Mobile app and web design/uploads/00_README.md,historical prototype/reference (not current authority),full text read,5818,3febf95495f3428ae065ddfaef074c0720cc292eb9bdb1bc6930174faaad5257
+temp/Mobile app and web design/uploads/01_CANONICAL_CONTEXT.md,historical prototype/reference (not current authority),full text read,6908,f209903f90b85affbd20cf894164a29ff64e5ea6cd4dbf91ff6e251077e767c0
+temp/Mobile app and web design/uploads/02_INPUT_RESEARCH.md,historical prototype/reference (not current authority),full text read,7657,45b0e6ebd7ad284f19b0a02b098187c4c26b51c368290621d840e49ed9da709c
+temp/Mobile app and web design/uploads/03_PIPELINE_SPEC.md,historical prototype/reference (not current authority),full text read,5956,8651cba60637ff2e462173485a69f9f6a5f1f058506c897c4300d690b27077b7
+temp/Mobile app and web design/uploads/04_RESPONSE_PAGE_RESEARCH.md,historical prototype/reference (not current authority),full text read,3857,616d1d541850272fd793c9a40d470f2707610b1b4f42847399615d791324ea52
+temp/Mobile app and web design/uploads/05_V0_IMPLEMENTATION_PLAN.md,historical prototype/reference (not current authority),full text read,5338,71202046cbb680392bf9d325c8865550523264c17a4ffb3736e3b3cdfa1ee1e1
+temp/Mobile app and web design/uploads/06_RESULT_UI_SPEC.md,historical prototype/reference (not current authority),full text read,6886,2e342e7d73c18caa4eb0f47481ad64f28982eee6186757e792ddb06d79bdeb04
+temp/Mobile app and web design/uploads/07_FUNCTIONAL_SPEC.md,historical prototype/reference (not current authority),full text read,6147,e026c12d8be277fb5cdb30796b9698d17836dcf0448f07728633d10fc8199764
+temp/Mobile app and web design/uploads/08_PRODUCT_VALIDATION_PLAN.md,historical prototype/reference (not current authority),full text read,5372,3956b3c6ec9d324a550ee2879a3f1a03c266cb7924c71a868b6fef4e0a9db2a0
+temp/Mobile app and web design/uploads/23 dary/韓國 - 首爾 3818e2b016ad80faace5dd74904bf05d.md,historical prototype/reference (not current authority),byte-equivalent to full-read temp/Odata/23 dary source; equality verified,1363,298e97d5a8d10803a2a34ce96e0b51c094d7e7c9fde476412d9773e446d6ade9
+temp/Mobile app and web design/uploads/AI Travel /details.txt,historical prototype/reference (not current authority),full text read,7605,862a25471ee4bc1c903883d232fd6914eb05e73b1f717312ea7389f7887d8e14
+temp/Mobile app and web design/uploads/AI Travel /sample.txt,historical prototype/reference (not current authority),full text read,1182,68cbdc794b2cd2e7778a762300d52dec5e12624100e797c7e26e6a8103abb927
+temp/Mobile app and web design/uploads/MVP_UI_SCOPE_REPORT.md,historical prototype/reference (not current authority),full text read,3183,0dc03605847962a5ea22b0a0ce32f448bd13511e0e2e6d581be73a59a065ebdd
+temp/Mobile app and web design/uploads/TRIP_RUNTIME_SEMANTIC_INTERPRETER.md,historical prototype/reference (not current authority),full text read,1583,d0471f4055c6581fda921957ab39eb569dacc16d6dcd149ac25050967297bab9
+temp/Odata/00 我/我的最初行程表.md,current research/source evidence,full text read,7390,02d71b32301886e6a624b313ca4003850e9bde3491a5817a5fe321ad2ff17210
+temp/Odata/11 jd/首爾.txt,current research/source evidence,full text read,242,139ad0bde3ddd6e36aba4880e50b1b104f59dab8c3d3523d5ff2ff92716f3ef3
+temp/Odata/15 R/跨年.txt,current research/source evidence,full text read,4297,b85dd12e219d0b94586140970fd8ef0761983ad0075e77ac828b81f827d06786
+temp/Odata/16 amber/上海.txt,current research/source evidence,full text read,307,e49960c1dfb2d508ab4256f64b1a13cf6b8fe2c1fec184e09e1e9289d3ee741c
+temp/Odata/17 lisa/沖繩.txt,current research/source evidence,full text read,2425,8e1c7f9ff884ef4a891139216f1a614aab7761cd20b1d397380080dd2f0f6f13
+temp/Odata/23 dary/韓國 - 首爾 3818e2b016ad80faace5dd74904bf05d.md,current research/source evidence,full text read,1363,298e97d5a8d10803a2a34ce96e0b51c094d7e7c9fde476412d9773e446d6ade9
+temp/trip_places_google_maps.md,current research/source evidence,full text read,2022,45fb60b2f9d68dc8295f1436f7a71ae610f58bc8a5e5fb48716dcc615b1e28af
+temp/validation/reviewer-root-probes-2026-09-07.md,current research/source evidence,full text read,3852,8293450ea24ee0d2e2ec66e0cca5d00e163305c565415a73c7768d2d37cebb0d
+tests/fixtures/benchmarks/external-markdown-001/README.md,sanitized fixture/instructions,full text read,3809,611a5dd70f7561811bcece6c8d6ac88d990296b768329660b43ffd05973df405
+tests/fixtures/benchmarks/external-markdown-001/source.md,sanitized fixture/instructions,full text read,1362,e8d973f936b606b6749e0348684f4f5aed9bd52a62c7ec90036cd8dc8051dfcf
+tests/fixtures/markdown-source/broken-assets.md,sanitized fixture/instructions,full text read,159,48afdbc947a2de53876138ce4fbc5034df2b421a98cd3f2bef57962adb9c2ac3
+tests/fixtures/markdown-source/mixed-structure.md,sanitized fixture/instructions,full text read,364,03fb7a12a949e80a26a11414323fa1d78e40f73ed1e97cfc07247d4aeaf3c6ac
+src/domain/source/schemas/unified-source-document.v1.schema.json,executable schema contract,full text read,5798,4e292d54d3355f3b0a549de61b71240393f8fb2bc87ef6ef22d9d2d54b55d32c
+src/domain/trip/schemas/canonical-trip.v1.schema.json,executable schema contract,full text read,9964,0f668dcef5b5aa5428c6227a9ac9af92b2bf3dd9b2c113c5e77cb7ea5db1b573
+src/domain/trip/schemas/parsed-trip-draft.v1.schema.json,executable schema contract,full text read,16156,12d111b7e8d02918a43345247baf7a391b70d91a378c65892d4f18b33c0beaef
+src/domain/trip/schemas/semantic-interpretation-result.v1.schema.json,executable schema contract,full text read,3507,096bcc71024230d080fef2ada1819208814ee8aff31aae4a3f62c20d5aac4df0
+src/domain/trip/schemas/text-source-input.v1.schema.json,executable schema contract,full text read,968,90c9345366212b4c0d09d40b5a24d54369e784eba47108ddb4f82ca0d0117208
+tests/fixtures/benchmarks/external-markdown-001/benchmark.json,benchmark annotation/scoring data,full text read,7001,e471a032903b7649c3c489f8dbcffa2157f5d57f2f4bf0d73595a6e8f7369313
+tests/fixtures/benchmarks/external-markdown-001/evaluation.example.json,benchmark annotation/scoring data,full text read,3254,707f11918f32b5decffbd2007b8815ab5d48aebcbb72713e75f80d48ead2f38e
+index.html,deployment configuration,full text read,610,c77ac5c96a7394ee09dbf69abcce6814e141271df64a00c7986c492274127d2b
+public/_headers,deployment configuration,full text read,398,9fa3e3af692cab1b217b5c8ffe0816912f8ed0189269f443dcf3d5a9e1a84aca
+.github/workflows/pages.yml,deployment configuration,full text read,765,0109d5c239047e2b20e199c1084f33d9a816cacc035ec0ad4684bf798f848598
+temp/Mobile app and web design/Trip Runtime 手機原型.dc.html,reference/sample/artifact (not normative text document),HTML implementation not fully read/rendered; associated research/design Markdown read,121318,
+temp/Mobile app and web design/Trip Runtime 桌機.dc.html,reference/sample/artifact (not normative text document),HTML implementation not fully read/rendered; associated research/design Markdown read,98955,
+temp/Mobile app and web design/_ds/organic-d0bf6c77-c870-4e3e-aac6-1db255313bc5/_adherence.oxlintrc.json,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,4042,
+temp/Mobile app and web design/_ds/organic-d0bf6c77-c870-4e3e-aac6-1db255313bc5/_ds_manifest.json,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,7353,
+temp/Mobile app and web design/export/Trip Runtime 手機原型 (單檔).html,reference/sample/artifact (not normative text document),HTML implementation not fully read/rendered; associated research/design Markdown read,15364071,
+temp/Mobile app and web design/export/Trip Runtime 桌機 (單檔).html,reference/sample/artifact (not normative text document),HTML implementation not fully read/rendered; associated research/design Markdown read,15337195,
+temp/Mobile app and web design/uploads/24 ares/Busan.xlsx,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,21346,
+temp/Mobile app and web design/uploads/24 ares/busan-travel/assets/sealife-map.png,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,1197179,
+temp/Mobile app and web design/uploads/24 ares/busan-travel/assets/skylineLuge.jpg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,232621,
+temp/Mobile app and web design/uploads/24 ares/busan-travel/assets/songjeong-timetable.png,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,110380,
+temp/Mobile app and web design/uploads/24 ares/busan-travel/index.html,reference/sample/artifact (not normative text document),HTML implementation not fully read/rendered; associated research/design Markdown read,16919,
+temp/Mobile app and web design/uploads/24 ares/busan-travel/釜山自由行-print.html,reference/sample/artifact (not normative text document),HTML implementation not fully read/rendered; associated research/design Markdown read,18291,
+temp/Mobile app and web design/uploads/24 ares/busan-travel/釜山自由行.dc.html,reference/sample/artifact (not normative text document),HTML implementation not fully read/rendered; associated research/design Markdown read,16919,
+temp/Mobile app and web design/uploads/AI Travel /AI Travel Planner.html,reference/sample/artifact (not normative text document),HTML implementation not fully read/rendered; associated research/design Markdown read,342190,
+temp/Mobile app and web design/uploads/AI Travel /Trip_大阪_2026-08-29.json,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,34170,
+temp/Mobile app and web design/uploads/截圖 2026-09-01 上午10.45.50.png,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,135152,
+temp/Mobile app and web design/uploads/截圖 2026-09-01 下午3.15.17.png,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,31178,
+temp/Mobile app and web design/uploads/截圖 2026-09-03 下午1.59.11.png,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,2908119,
+temp/Mobile app and web design/v1/Trip Runtime 手機原型 v1.dc.html,reference/sample/artifact (not normative text document),HTML implementation not fully read/rendered; associated research/design Markdown read,121819,
+temp/Mobile app and web design/v1/Trip Runtime 桌機 v1.dc.html,reference/sample/artifact (not normative text document),HTML implementation not fully read/rendered; associated research/design Markdown read,99222,
+temp/Odata/1 佩/2026.08 清州.xlsx,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,55481,
+temp/Odata/12-14 橘/2024韓國.xlsx,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,7380179,
+temp/Odata/12-14 橘/2025澎湖史努比.xlsx,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,55290,
+temp/Odata/12-14 橘/2025釜山行.xlsx,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,5270911,
+temp/Odata/18 eve/messageImage_1788013056238.jpg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,199324,
+temp/Odata/19 佩 66天/2017自我放逐-日本.xlsx,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,124337,
+temp/Odata/2 妹妹/OSAKA.pdf,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,9705374,
+temp/Odata/20 玉/02FF810C-2DF8-4C4C-865E-F06BB6852360.jpeg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,461765,
+temp/Odata/20 玉/7C853398-4ECB-4A84-9FC2-51C38C93B549.jpeg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,464287,
+temp/Odata/20 玉/E08D212B-D1CA-4CA0-BB8E-23CC4FCED65D.jpeg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,462331,
+temp/Odata/21-22 ethan/JP0107.xlsx,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,61338979,
+temp/Odata/21-22 ethan/名古屋.xlsx,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,106904030,
+temp/Odata/24 ares/Busan.xlsx,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,21346,
+temp/Odata/24 ares/busan-travel/assets/sealife-map.png,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,1197179,
+temp/Odata/24 ares/busan-travel/assets/skylineLuge.jpg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,232621,
+temp/Odata/24 ares/busan-travel/assets/songjeong-timetable.png,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,110380,
+temp/Odata/24 ares/busan-travel/index.html,reference/sample/artifact (not normative text document),HTML implementation not fully read/rendered; associated research/design Markdown read,16919,
+temp/Odata/24 ares/busan-travel/釜山自由行-print.html,reference/sample/artifact (not normative text document),HTML implementation not fully read/rendered; associated research/design Markdown read,18291,
+temp/Odata/24 ares/busan-travel/釜山自由行.dc.html,reference/sample/artifact (not normative text document),HTML implementation not fully read/rendered; associated research/design Markdown read,16919,
+temp/Odata/25 慈/九州之旅.pdf,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,1208150,
+temp/Odata/3 vivi/S__127909899.jpg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,428926,
+temp/Odata/4 coni/E89858CB-F29A-4CD8-9657-6DF6560D97B0.jpeg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,52796,
+temp/Odata/5-6 小穎/2025東京旅遊.pdf,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,11420914,
+temp/Odata/5-6 小穎/2026大阪旅遊.pdf,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,4111874,
+temp/Odata/7 yiting/03556FBE-C871-4510-A00B-71EE81ED8186.jpeg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,379907,
+temp/Odata/7 yiting/0857A569-F9C1-4CA7-8601-52955B478965.jpeg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,432712,
+temp/Odata/7 yiting/322B4148-E328-49A0-A446-012DD9820981.jpeg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,354536,
+temp/Odata/7 yiting/61E8DBC3-B955-4E7E-88DC-A59EDBED0616.jpeg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,375163,
+temp/Odata/7 yiting/866B0C2A-438F-49F8-AEED-C8D3E7A450AA.jpeg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,434207,
+temp/Odata/7 yiting/8D079148-0D32-4008-ABC1-C816AD60E685.jpeg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,374117,
+temp/Odata/7 yiting/C749E3AA-4FFC-4264-B95D-4A81AFDFE347.jpeg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,364736,
+temp/Odata/7 yiting/D0F7AA8D-664B-4F32-A835-FAFD31139FEB.jpeg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,318106,
+temp/Odata/7 yiting/F955F577-A829-41C4-830D-9F27E94CAC3E.jpeg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,406660,
+temp/Odata/8-10 jenny/S__91291687.jpg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,282616,
+temp/Odata/8-10 jenny/S__91291688.jpg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,429510,
+temp/Odata/8-10 jenny/S__91291695.jpg,reference/sample/artifact (not normative text document),binary/data not reopened; corresponding research inventory/summary read where available,250780,
+temp/validation/external-markdown-001-integrated-prompt.json,reference/sample/artifact (not normative text document),not independently read in full; current validation.md assessment and root evidence consulted,217980,
+temp/validation/external-markdown-001-post-guidance.json,reference/sample/artifact (not normative text document),not independently read in full; current validation.md assessment and root evidence consulted,213331,

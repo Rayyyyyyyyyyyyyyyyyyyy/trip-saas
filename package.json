@@ -4,23 +4,52 @@
   "version": "0.2.0",
   "type": "module",
   "scripts": {
+    "generate:schema-validators": "node scripts/generate-schema-validators.mjs",
+    "prebuild": "npm run generate:schema-validators",
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:component": "vitest run --project component",
+    "test:browser": "playwright test",
+    "test:production-browser": "playwright test --config playwright.production.config.ts",
+    "benchmark:external-markdown-001": "vitest run --config vitest.benchmark.config.ts",
+    "test:credential-compat": "playwright test tests/browser/credential-key-compatibility.spec.ts --project=platform-chrome --project=platform-webkit",
+    "test:credential-security": "playwright test tests/browser/credential-key-compatibility.spec.ts tests/browser/credential-security-policy.spec.ts --project=platform-chrome --project=platform-webkit",
+    "test:persistence-browser": "playwright test tests/browser/confirmed-trip-repository.spec.ts tests/browser/gemini-credential-repository.spec.ts tests/browser/persistence-storage-inspection.spec.ts tests/browser/repository-failure-cases.spec.ts --project=platform-chrome --project=platform-webkit",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@fontsource/noto-sans-tc": "^5.3.0",
+    "@fontsource/noto-serif-tc": "^5.3.0",
     "@mui/icons-material": "^7.3.1",
     "@mui/material": "^7.3.1",
     "@tailwindcss/vite": "^4.3.3",
+    "ajv": "^8.20.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "tailwindcss": "^4.3.3"
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "tailwindcss": "^4.3.3",
+    "unified": "^11.0.5"
   },
   "devDependencies": {
+    "@babel/parser": "^7.29.8",
+    "@playwright/test": "^1.62.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/node": "^26.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^5.0.2",
+    "jsdom": "^29.1.1",
     "prettier": "^3.9.6",
-    "vite": "^7.1.3"
+    "typescript": "^7.0.2",
+    "vite": "^7.1.3",
+    "vitest": "^4.1.11"
   }
 }

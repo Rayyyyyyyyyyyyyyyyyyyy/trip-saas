@@ -3,12 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#536358" />
-    <meta name="description" content="2026 大阪、宇治、奈良六日旅行 Viewer" />
-    <title>大阪・宇治・奈良｜Trip Runtime</title>
+    <meta name="theme-color" content="#ffffff" />
+    <!-- Netlify delivers the complete policy from public/_headers. Keep this
+         portable subset before styles/scripts as defense in depth; browsers
+         only honor frame-ancestors from the Netlify response header. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; base-uri 'self'; connect-src 'self' https://generativelanguage.googleapis.com; font-src 'self' data:; form-action 'self'; frame-src 'none'; img-src 'self' data: blob:; manifest-src 'self'; media-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self'"
+    />
+    <meta
+      name="description"
+      content="把既有行程整理成旅行途中好用的個人檢視器。"
+    />
+    <style>
+      @layer theme, base, mui, components, utilities;
+    </style>
+    <meta name="emotion-insertion-point" content="" />
+    <title>Trip Runtime</title>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trip-runtime.local/schemas/text-source-input.v1.schema.json",
+  "title": "TextSourceInput v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_id",
+    "input_mode",
+    "media_type",
+    "content",
+    "display_name"
+  ],
+  "properties": {
+    "schema_version": { "const": "text-source-input.v1" },
+    "source_id": { "$ref": "#/$defs/stableId" },
+    "input_mode": {
+      "enum": ["markdown_file", "pasted_markdown"]
+    },
+    "media_type": { "const": "text/markdown" },
+    "content": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    }
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    }
+  }
+}

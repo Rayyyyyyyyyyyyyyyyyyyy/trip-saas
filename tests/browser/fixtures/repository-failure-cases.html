@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Repository failure cases</title>
+  </head>
+  <body data-status="running">
+    <pre id="result"></pre>
+    <script type="module">
+      import { goldenOsakaCanonicalTrip } from "/src/fixtures/golden/osakaCanonicalTrip.ts";
+      import { createConfirmedTripRepository } from "/src/persistence/confirmedTripRepository.ts";
+      import { createGeminiCredentialRepository } from "/src/persistence/geminiCredentialRepository.ts";
+
+      const CONFIRMED_DATABASE = "repository-failures-confirmed";
+      const CREDENTIAL_DATABASE = "repository-failures-credential";
+      const MIGRATION_DATABASE = "repository-failures-migration";
+      const result = document.querySelector("#result");
+
+      function requestResult(request) {
+        return new Promise((resolve, reject) => {
+          request.addEventListener("success", () => resolve(request.result), {
+            once: true,
+          });
+          request.addEventListener("error", () => reject(request.error), {
+            once: true,
+          });
+        });
+      }
+
+      function transactionSettled(transaction) {
+        return new Promise((resolve) => {
+          transaction.addEventListener("complete", () => resolve("complete"), {
+            once: true,
+          });
+          transaction.addEventListener("abort", () => resolve("abort"), {
+            once: true,
+          });
+        });
+      }
+
+      async function withDatabase(databaseName, callback) {
+        const database = await requestResult(indexedDB.open(databaseName));
+        try {
+          return await callback(database);
+        } finally {
+          database.close();
+        }
+      }
+
+      async function abortReplacementTransaction() {
+        return withDatabase(CONFIRMED_DATABASE, async (database) => {
+          const transaction = database.transaction(
+            ["trips", "metadata"],
+            "readwrite",
+          );
+          const replacement = structuredClone(goldenOsakaCanonicalTrip);
+          replacement.id = "aborted-replacement";
+          transaction.objectStore("trips").clear();
+          transaction.objectStore("trips").put({
+            id: replacement.id,
+            repositoryVersion: 1,
+            savedAt: new Date().toISOString(),
+            trip: replacement,
+          });
+          transaction.objectStore("metadata").put({
+            key: "active-trip",
+            repositoryVersion: 1,
+            tripId: replacement.id,
+          });
+          transaction.abort();
+          return transactionSettled(transaction);
+        });
+      }
+
+      async function replaceStoredTrip(mutator) {
+        return withDatabase(CONFIRMED_DATABASE, async (database) => {
+          const read = database.transaction("trips", "readonly");
+          const record = await requestResult(
+            read.objectStore("trips").get(goldenOsakaCanonicalTrip.id),
+          );
+          mutator(record);
+          const write = database.transaction("trips", "readwrite");
+          write.objectStore("trips").put(record);
+          return transactionSettled(write);
+        });
+      }
+
+      async function replaceActivePointer(value) {
+        return withDatabase(CONFIRMED_DATABASE, async (database) => {
+          const transaction = database.transaction("metadata", "readwrite");
+          transaction.objectStore("metadata").put(value);
+          return transactionSettled(transaction);
+        });
+      }
+
+      async function createNewerDatabase() {
+        const request = indexedDB.open(MIGRATION_DATABASE, 2);
+        request.addEventListener("upgradeneeded", () => {
+          request.result.createObjectStore("marker");
+        });
+        const database = await requestResult(request);
+        const transaction = database.transaction("marker", "readwrite");
+        transaction.objectStore("marker").put("preserved", "value");
+        await transactionSettled(transaction);
+        database.close();
+      }
+
+      async function readMigrationMarker() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(MIGRATION_DATABASE, 2);
+          request.addEventListener("success", async () => {
+            const database = request.result;
+            const transaction = database.transaction("marker", "readonly");
+            const value = await requestResult(
+              transaction.objectStore("marker").get("value"),
+            );
+            database.close();
+            resolve(value);
+          });
+          request.addEventListener("error", () => reject(request.error));
+        });
+      }
+
+      async function mutateCredentialStore(storeName, id, mutator) {
+        return withDatabase(CREDENTIAL_DATABASE, async (database) => {
+          const read = database.transaction(storeName, "readonly");
+          const record = await requestResult(read.objectStore(storeName).get(id));
+          const write = database.transaction(storeName, "readwrite");
+          if (mutator === null) {
+            write.objectStore(storeName).delete(id);
+          } else {
+            mutator(record);
+            write.objectStore(storeName).put(record);
+          }
+          return transactionSettled(write);
+        });
+      }
+
+      async function deleteDatabase(name) {
+        await requestResult(indexedDB.deleteDatabase(name));
+      }
+
+      async function run() {
+        const confirmed = createConfirmedTripRepository({
+          databaseName: CONFIRMED_DATABASE,
+        });
+        const credential = createGeminiCredentialRepository({
+          databaseName: CREDENTIAL_DATABASE,
+        });
+
+        try {
+          await confirmed.clear();
+          await credential.clear();
+          await confirmed.replaceActive(goldenOsakaCanonicalTrip);
+
+          const aborted = await abortReplacementTransaction();
+          const afterAbort = await confirmed.loadActive();
+
+          await replaceStoredTrip((record) => {
+            record.trip.start_date = "2026-02-31";
+          });
+          const invalidRecord = await confirmed.loadActive();
+          await confirmed.replaceActive(goldenOsakaCanonicalTrip);
+
+          await replaceActivePointer({
+            key: "active-trip",
+            repositoryVersion: 99,
+            tripId: goldenOsakaCanonicalTrip.id,
+          });
+          const unsupportedPointer = await confirmed.loadActive();
+          await confirmed.replaceActive(goldenOsakaCanonicalTrip);
+
+          await createNewerDatabase();
+          const migrationRepository = createConfirmedTripRepository({
+            databaseName: MIGRATION_DATABASE,
+          });
+          let migrationOpenFailed = false;
+          try {
+            await migrationRepository.loadActive();
+          } catch (error) {
+            migrationOpenFailed = error?.code === "open_failed";
+          }
+          const migrationMarker = await readMigrationMarker();
+
+          await credential.save("synthetic-repository-failure-key");
+          await mutateCredentialStore("credentials", "gemini-api-key", null);
+          const incompleteCredential = await credential.load();
+          await credential.save("synthetic-repository-failure-key");
+          await mutateCredentialStore(
+            "credentials",
+            "gemini-api-key",
+            (record) => {
+              const bytes = new Uint8Array(record.ciphertext);
+              bytes[0] ^= 0xff;
+              record.ciphertext = bytes.buffer;
+            },
+          );
+          const undecryptableCredential = await credential.load();
+          await credential.save("synthetic-repository-failure-key");
+          await mutateCredentialStore(
+            "key-material",
+            "gemini-aes-gcm-key",
+            (record) => {
+              record.key = "not-a-crypto-key";
+            },
+          );
+          const invalidCredentialKey = await credential.load();
+
+          const details = {
+            abortedTransactionRolledBack:
+              aborted === "abort" &&
+              afterAbort.status === "ready" &&
+              afterAbort.trip.id === goldenOsakaCanonicalTrip.id,
+            incompleteCredentialDetected:
+              incompleteCredential.status === "unavailable" &&
+              incompleteCredential.reason === "incomplete_record",
+            invalidCredentialKeyDetected:
+              invalidCredentialKey.status === "unavailable" &&
+              invalidCredentialKey.reason === "invalid_key",
+            invalidTripRecordDetected:
+              invalidRecord.status === "invalid" &&
+              invalidRecord.reason === "active_record_invalid",
+            migrationFailurePreservedData:
+              migrationOpenFailed && migrationMarker === "preserved",
+            undecryptableCredentialDetected:
+              undecryptableCredential.status === "unavailable" &&
+              undecryptableCredential.reason === "decryption_failed",
+            unsupportedPointerDetected:
+              unsupportedPointer.status === "invalid" &&
+              unsupportedPointer.reason === "active_pointer_invalid",
+          };
+          const passed = Object.values(details).every(Boolean);
+
+          document.body.dataset.status = passed ? "passed" : "failed";
+          result.textContent = JSON.stringify(details, null, 2);
+          await deleteDatabase(CONFIRMED_DATABASE);
+          await deleteDatabase(CREDENTIAL_DATABASE);
+          await deleteDatabase(MIGRATION_DATABASE);
+        } catch (error) {
+          document.body.dataset.status = "failed";
+          result.textContent = JSON.stringify(
+            {
+              errorName: error instanceof Error ? error.name : "UnknownError",
+              message: error instanceof Error ? error.message : String(error),
+            },
+            null,
+            2,
+          );
+        }
+      }
+
+      void run();
+    </script>
+  </body>
+</html>

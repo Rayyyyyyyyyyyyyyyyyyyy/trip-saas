@@ -1,0 +1,428 @@
+{
+  "schema_version": "external-markdown-live-comparison.v3",
+  "benchmark_id": "external-markdown-001",
+  "benchmark_schema_version": "external-markdown-benchmark.v1",
+  "rubric_version": "faithful-markdown-rubric.v2",
+  "model_id": "gemini-3.5-flash",
+  "thinking_levels": [
+    "low",
+    "medium",
+    "high"
+  ],
+  "executed_at": "2026-09-08T00:56:55.969Z",
+  "source_sha256": "e8d973f936b606b6749e0348684f4f5aed9bd52a62c7ec90036cd8dc8051dfcf",
+  "block_mapping": [
+    {
+      "annotation_block_id": "b001",
+      "frozen_kind": "heading",
+      "lines": [
+        1,
+        1
+      ],
+      "runtime_kind": "heading",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0001"
+    },
+    {
+      "annotation_block_id": "b002",
+      "frozen_kind": "paragraph",
+      "lines": [
+        3,
+        3
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0002"
+    },
+    {
+      "annotation_block_id": "b003",
+      "frozen_kind": "paragraph",
+      "lines": [
+        5,
+        5
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0003"
+    },
+    {
+      "annotation_block_id": "b004",
+      "frozen_kind": "table",
+      "lines": [
+        7,
+        9
+      ],
+      "runtime_kind": "table",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0004"
+    },
+    {
+      "annotation_block_id": "b005",
+      "frozen_kind": "thematic_break",
+      "lines": [
+        11,
+        11
+      ],
+      "runtime_kind": "thematic_break",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0005"
+    },
+    {
+      "annotation_block_id": "b006",
+      "frozen_kind": "paragraph",
+      "lines": [
+        13,
+        13
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0006"
+    },
+    {
+      "annotation_block_id": "b007",
+      "frozen_kind": "paragraph",
+      "lines": [
+        15,
+        15
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0007"
+    },
+    {
+      "annotation_block_id": "b008",
+      "frozen_kind": "paragraph",
+      "lines": [
+        17,
+        17
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0008"
+    },
+    {
+      "annotation_block_id": "b009",
+      "frozen_kind": "image",
+      "lines": [
+        19,
+        19
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0009"
+    },
+    {
+      "annotation_block_id": "b010",
+      "frozen_kind": "paragraph",
+      "lines": [
+        21,
+        21
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0010"
+    },
+    {
+      "annotation_block_id": "b011",
+      "frozen_kind": "thematic_break",
+      "lines": [
+        23,
+        23
+      ],
+      "runtime_kind": "thematic_break",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0011"
+    },
+    {
+      "annotation_block_id": "b012",
+      "frozen_kind": "paragraph",
+      "lines": [
+        25,
+        25
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0012"
+    },
+    {
+      "annotation_block_id": "b013",
+      "frozen_kind": "paragraph",
+      "lines": [
+        27,
+        27
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0013"
+    },
+    {
+      "annotation_block_id": "b014",
+      "frozen_kind": "paragraph",
+      "lines": [
+        29,
+        29
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0014"
+    },
+    {
+      "annotation_block_id": "b015",
+      "frozen_kind": "paragraph",
+      "lines": [
+        31,
+        31
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0015"
+    },
+    {
+      "annotation_block_id": "b016",
+      "frozen_kind": "thematic_break",
+      "lines": [
+        33,
+        33
+      ],
+      "runtime_kind": "thematic_break",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0016"
+    },
+    {
+      "annotation_block_id": "b017",
+      "frozen_kind": "paragraph",
+      "lines": [
+        35,
+        35
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0017"
+    },
+    {
+      "annotation_block_id": "b018",
+      "frozen_kind": "paragraph",
+      "lines": [
+        37,
+        37
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0018"
+    },
+    {
+      "annotation_block_id": "b019",
+      "frozen_kind": "paragraph",
+      "lines": [
+        39,
+        39
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0019"
+    },
+    {
+      "annotation_block_id": "b020",
+      "frozen_kind": "paragraph",
+      "lines": [
+        41,
+        41
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0020"
+    },
+    {
+      "annotation_block_id": "b021",
+      "frozen_kind": "paragraph",
+      "lines": [
+        43,
+        43
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0021"
+    },
+    {
+      "annotation_block_id": "b022",
+      "frozen_kind": "paragraph",
+      "lines": [
+        45,
+        45
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0022"
+    },
+    {
+      "annotation_block_id": "b023",
+      "frozen_kind": "thematic_break",
+      "lines": [
+        47,
+        47
+      ],
+      "runtime_kind": "thematic_break",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0023"
+    },
+    {
+      "annotation_block_id": "b024",
+      "frozen_kind": "paragraph",
+      "lines": [
+        49,
+        49
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0024"
+    },
+    {
+      "annotation_block_id": "b025",
+      "frozen_kind": "paragraph",
+      "lines": [
+        51,
+        51
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0025"
+    },
+    {
+      "annotation_block_id": "b026",
+      "frozen_kind": "paragraph",
+      "lines": [
+        53,
+        53
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0026"
+    },
+    {
+      "annotation_block_id": "b027",
+      "frozen_kind": "paragraph",
+      "lines": [
+        55,
+        55
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0027"
+    },
+    {
+      "annotation_block_id": "b028",
+      "frozen_kind": "thematic_break",
+      "lines": [
+        57,
+        57
+      ],
+      "runtime_kind": "thematic_break",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0028"
+    },
+    {
+      "annotation_block_id": "b029",
+      "frozen_kind": "paragraph",
+      "lines": [
+        59,
+        59
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0029"
+    },
+    {
+      "annotation_block_id": "b030",
+      "frozen_kind": "paragraph",
+      "lines": [
+        61,
+        61
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0030"
+    },
+    {
+      "annotation_block_id": "b031",
+      "frozen_kind": "paragraph",
+      "lines": [
+        63,
+        63
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0031"
+    },
+    {
+      "annotation_block_id": "b032",
+      "frozen_kind": "blockquote_like",
+      "lines": [
+        65,
+        65
+      ],
+      "runtime_kind": "blockquote",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0032"
+    },
+    {
+      "annotation_block_id": "b033",
+      "frozen_kind": "paragraph",
+      "lines": [
+        67,
+        67
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0033"
+    },
+    {
+      "annotation_block_id": "b034",
+      "frozen_kind": "paragraph",
+      "lines": [
+        69,
+        69
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0034"
+    },
+    {
+      "annotation_block_id": "b035",
+      "frozen_kind": "image",
+      "lines": [
+        71,
+        71
+      ],
+      "runtime_kind": "paragraph",
+      "runtime_source_ref": "benchmark:external-markdown-001:source:block:0035"
+    }
+  ],
+  "setup_failure": null,
+  "execution_status": "failed",
+  "acceptance_status": "pending",
+  "runs": [
+    {
+      "thinking_level": "low",
+      "execution_status": "failed",
+      "failure": {
+        "code": "draft_not_reviewable",
+        "phase": "review_gate",
+        "http_status": null
+      },
+      "safe_diagnostics": [
+        {
+          "schemaVersion": "gemini-diagnostic.v1",
+          "event": "gemini_request_failed",
+          "phase": "response",
+          "category": "unexpected",
+          "httpStatus": null,
+          "retryAttempt": null
+        }
+      ]
+    },
+    {
+      "thinking_level": "medium",
+      "execution_status": "failed",
+      "failure": {
+        "code": "provider_timeout",
+        "phase": "request",
+        "http_status": null
+      },
+      "safe_diagnostics": [
+        {
+          "schemaVersion": "gemini-diagnostic.v1",
+          "event": "gemini_request_failed",
+          "phase": "request",
+          "category": "timed_out",
+          "httpStatus": null,
+          "retryAttempt": 1
+        }
+      ]
+    },
+    {
+      "thinking_level": "high",
+      "execution_status": "failed",
+      "failure": {
+        "code": "provider_unavailable",
+        "phase": "request",
+        "http_status": 503
+      },
+      "safe_diagnostics": [
+        {
+          "schemaVersion": "gemini-diagnostic.v1",
+          "event": "gemini_request_failed",
+          "phase": "request",
+          "category": "provider_unavailable",
+          "httpStatus": 503,
+          "retryAttempt": 1
+        }
+      ]
+    }
+  ]
+}
