@@ -8,3 +8,10 @@ test-results/
 # Third-party itinerary samples stay local-only; never commit them.
 temp/Odata/*
 !temp/Odata/00 我/
+
+# Local tool config and design scratch; out of product scope.
+.agents/
+.claude/
+.codex/
+.idea/
+temp/Mobile app and web design/
