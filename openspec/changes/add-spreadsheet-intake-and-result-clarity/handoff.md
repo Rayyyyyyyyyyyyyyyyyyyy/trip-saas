@@ -1,6 +1,6 @@
 # Handoff — add-spreadsheet-intake-and-result-clarity
 
-Updated 2026-10-01. This change is paused at the user's request after task group 2. **Nothing is committed yet.**
+Updated 2026-10-01. This change is paused at the user's request after task group 2. The work is committed locally on `ft/spreadsheet-intake`; nothing is pushed.
 
 ## Where things stand
 
@@ -18,8 +18,13 @@ Progress is 10/33 (the tasks.md checkboxes are authoritative).
 ## Git state
 
 - Branch `main` at `58dace3`, which equals `origin/main`, the only remote branch and the GitHub default. Its history contains no third-party samples, and `temp/Odata/*` is git-ignored except `00 我/`.
-- All work for this change is uncommitted on `main` (47 paths). Per the repo convention, move it to a feature branch before committing (for example `git switch -c ft/spreadsheet-intake`). Commit or push only when the user asks.
-- `src/features/result-clarity-prototype/` is a throwaway prototype (Result variants A/B/C on Sample #23). Per the prototype workflow, capture it on a throwaway branch, keep it out of the feature commit, and delete it from the working tree afterwards. The chosen design was **A, plus B's 44px map button**.
+- This change lives on local branch `ft/spreadsheet-intake`, which sits on top of `main`:
+  - `4596b56` docs (the OpenSpec change)
+  - `9f4a4d8` feat (groups 1–2)
+  - plus this handoff update
+
+  None of it is pushed. Push only when the user asks.
+- The throwaway Result prototype (variants A/B/C on Sample #23) lives only on local branch `prototype/result-clarity` (`db06dfc`); never merge it. The chosen design was **A, plus B's 44px map button**.
 
 ## Evidence for the current working tree (2026-09-30)
 
@@ -76,4 +81,4 @@ The authoritative details are in `design.md`, under "Implementation clarificatio
 2. Group 3: implement 3.1–3.3 through Codex. Ask the user before 3.4 (rerunning live External Markdown Benchmark #001 on the new response schema version).
 3. Ask the user to approve adding SheetJS CE pinned from the official distribution (not `xlsx@0.18.x` from npm) before group 4.
 4. Check the status of `complete-faithful-markdown-journey` task 4.10 before 5.2.
-5. Before committing: create a feature branch, capture the prototype on a throwaway branch, and run the full test suite.
+5. Before pushing or opening a PR, run the full test suite.
