@@ -233,6 +233,32 @@ describe("ReviewScreen", () => {
     expect(screen.getAllByRole("blockquote")[0]).toHaveClass("font-source");
   });
 
+  it("shows a derived supporting group label read-only", async () => {
+    const draft = structuredClone(validParsedTripDraft);
+    draft.supporting_items = [
+      {
+        id: "support:food",
+        kind: "note",
+        text: "Pizza list",
+        url: null,
+        unresolved: false,
+        source_refs: ["source-block:001"],
+        group: { id: "heading:food", label: "美食清單", order: 2 },
+      },
+    ];
+
+    render(<Harness initialDraft={draft} />);
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "查看完整校對內容" }));
+
+    expect(screen.getByText("分類：美食清單")).toBeVisible();
+    expect(screen.getByText("Pizza list")).toBeVisible();
+    expect(
+      screen.queryByRole("textbox", { name: /分類|群組/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps original-to-new visibility and independent state flags", async () => {
     const user = userEvent.setup();
     render(<Harness />);

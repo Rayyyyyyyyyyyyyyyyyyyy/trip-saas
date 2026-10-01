@@ -17,7 +17,16 @@ export function validateParsedTripDraft(
   draft: ParsedTripDraft,
   expectedSourceRefs: string[] = [],
 ): ValidationResult {
-  const schemaResult = validateParsedTripDraftSchema(draft);
+  // The provider contract remains parsed-trip-draft.v1 and deliberately has
+  // no group field. Group is derived locally after those response gates, so
+  // revalidation of the Review candidate checks the original provider shape.
+  const providerShape = {
+    ...structuredClone(draft),
+    supporting_items: draft.supporting_items.map(({ group: _group, ...item }) =>
+      structuredClone(item),
+    ),
+  };
+  const schemaResult = validateParsedTripDraftSchema(providerShape);
   if (!schemaResult.valid) {
     return {
       valid: false,

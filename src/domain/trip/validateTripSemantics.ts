@@ -209,6 +209,36 @@ export function validateTripSemantics(trip: SemanticTrip): TripFinding[] {
     }
   }
 
+  const supportingGroups = new Map<
+    string,
+    { label: string; order: number; itemId: string }
+  >();
+  for (const item of trip.supporting_items) {
+    // Provider output is validated before deterministic group derivation, so
+    // its supporting items temporarily have no group member at runtime.
+    if (!item.group) continue;
+    const existing = supportingGroups.get(item.group.id);
+    if (
+      existing &&
+      (existing.label !== item.group.label ||
+        existing.order !== item.group.order)
+    ) {
+      findings.push(
+        issue(
+          "SUPPORTING_GROUP_INCONSISTENT",
+          `Supporting group ${item.group.id} has inconsistent label or order.`,
+          [existing.itemId, item.id],
+        ),
+      );
+    } else if (!existing) {
+      supportingGroups.set(item.group.id, {
+        label: item.group.label,
+        order: item.group.order,
+        itemId: item.id,
+      });
+    }
+  }
+
   findings.push(...validateTripRelationships(trip).findings);
   return findings;
 }

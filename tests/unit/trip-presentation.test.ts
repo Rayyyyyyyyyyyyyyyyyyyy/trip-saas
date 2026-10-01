@@ -1,6 +1,9 @@
 import { projectedLeaves } from "../fixtures/semantics/projectedLeaves";
 import { describe, expect, it } from "vitest";
-import { createTripPresentation } from "../../src/features/result/createTripPresentation";
+import {
+  createTripPresentation,
+  verifySupportingPlacement,
+} from "../../src/features/result/createTripPresentation";
 import { goldenOsakaCanonicalTrip } from "../../src/fixtures/golden/osakaCanonicalTrip";
 import type { TimeKind, TripTime } from "../../src/domain/trip/types";
 
@@ -21,6 +24,8 @@ describe("Golden Presentation Projection", () => {
       "Aloft Osaka Dojima",
     );
     expect(presentation.overview.days).toHaveLength(6);
+    expect(presentation.supportingItems).toEqual([]);
+    expect(presentation.supportingGroups).toEqual([]);
   });
 
   it("projects Day anchors, transit, flexible, and optional roles", () => {
@@ -44,18 +49,21 @@ describe("Golden Presentation Projection", () => {
     );
   });
 
-  it("passes exact actions through unchanged", () => {
+  it("passes an exact source map URL through unchanged as the map action", () => {
     const consola = projectedLeaves(
       presentation.days.find((day) => day.date === "2026-09-12")!.items,
     ).find((entity) => entity.title === "喫茶 コンソラ")!;
 
-    expect(consola.actions[0]!.url).toBe(
-      "https://www.google.com/maps/search/?api=1&query=%E5%96%AB%E8%8C%B6%20%E3%82%B3%E3%83%B3%E3%82%BD%E3%83%A9%20%E5%AE%87%E6%B2%BB",
-    );
-    expect(consola.actions[0]!).toMatchObject({
+    expect(consola.mapAction).toEqual({
+      kind: "source",
+      url: "https://www.google.com/maps/search/?api=1&query=%E5%96%AB%E8%8C%B6%20%E3%82%B3%E3%83%B3%E3%82%BD%E3%83%A9%20%E5%AE%87%E6%B2%BB",
+      query: null,
+      label: "地圖",
+      accessibleName: "開啟「喫茶 コンソラ」的地圖連結",
       target: "_blank",
       rel: "noopener noreferrer",
     });
+    expect(consola.actions.some((action) => action.kind === "map")).toBe(false);
   });
 
   it.each([
@@ -245,6 +253,165 @@ describe("Golden Presentation Projection", () => {
     expect(projected.actions).toEqual([]);
   });
 
+  it("builds a labeled map search from verbatim place text when the source has no URL", () => {
+    const fixture = structuredClone(goldenOsakaCanonicalTrip);
+    const entity = fixture.entities[0];
+    entity.title = "吃點東西";
+    entity.place = {
+      name: "노랑통닭 명동점",
+      address: null,
+      url: null,
+      unresolved: false,
+    };
+    entity.actions = [];
+
+    const projected = projectedLeaves(
+      createTripPresentation(fixture).days[0]!.items,
+    )[0]!;
+
+    expect(projected.mapAction).toEqual({
+      kind: "search",
+      url: "https://www.google.com/maps/search/?api=1&query=%EB%85%B8%EB%9E%91%ED%86%B5%EB%8B%AD%20%EB%AA%85%EB%8F%99%EC%A0%90",
+      query: "노랑통닭 명동점",
+      label: "搜尋 Google 地圖",
+      accessibleName: "以「노랑통닭 명동점」搜尋 Google 地圖",
+      target: "_blank",
+      rel: "noopener noreferrer",
+    });
+    expect(projected.placeLine).toBe("노랑통닭 명동점");
+  });
+
+  it("preserves consecutive whitespace in the confirmed place search query", () => {
+    const fixture = structuredClone(goldenOsakaCanonicalTrip);
+    const entity = fixture.entities[0];
+    entity.title = "吃點東西";
+    entity.place = {
+      name: "노랑통닭  명동점",
+      address: null,
+      url: null,
+      unresolved: false,
+    };
+    entity.actions = [];
+
+    const projected = projectedLeaves(
+      createTripPresentation(fixture).days[0]!.items,
+    )[0]!;
+
+    expect(projected.mapAction).toMatchObject({
+      kind: "search",
+      query: "노랑통닭  명동점",
+      url: "https://www.google.com/maps/search/?api=1&query=%EB%85%B8%EB%9E%91%ED%86%B5%EB%8B%AD%20%20%EB%AA%85%EB%8F%99%EC%A0%90",
+    });
+    expect(projected.placeLine).toBe("노랑통닭  명동점");
+  });
+
+  it("uses the verbatim address when the place name contains only whitespace", () => {
+    const fixture = structuredClone(goldenOsakaCanonicalTrip);
+    const entity = fixture.entities[0];
+    entity.title = "醫美";
+    entity.place = {
+      name: "   ",
+      address: "首爾特別市  瑞草區",
+      url: null,
+      unresolved: false,
+    };
+    entity.actions = [];
+
+    const projected = projectedLeaves(
+      createTripPresentation(fixture).days[0]!.items,
+    )[0]!;
+
+    expect(projected.mapAction).toMatchObject({
+      kind: "search",
+      query: "首爾特別市  瑞草區",
+      url: "https://www.google.com/maps/search/?api=1&query=%E9%A6%96%E7%88%BE%E7%89%B9%E5%88%A5%E5%B8%82%20%20%E7%91%9E%E8%8D%89%E5%8D%80",
+    });
+    expect(projected.placeLine).toBe("首爾特別市  瑞草區");
+  });
+
+  it("offers no map action without place text or a source URL", () => {
+    const fixture = structuredClone(goldenOsakaCanonicalTrip);
+    const entity = fixture.entities[0];
+    entity.place = { name: null, address: null, url: null, unresolved: false };
+    entity.actions = [];
+
+    const projected = projectedLeaves(
+      createTripPresentation(fixture).days[0]!.items,
+    )[0]!;
+
+    expect(projected.mapAction).toBeNull();
+    expect(projected.placeLine).toBeNull();
+  });
+
+  it("does not repeat place text the title already contains", () => {
+    const fixture = structuredClone(goldenOsakaCanonicalTrip);
+    const entity = fixture.entities[0];
+    entity.title = "노랑통닭  명동점 (炸雞)";
+    entity.place = {
+      name: "노랑통닭 명동점",
+      address: null,
+      url: null,
+      unresolved: false,
+    };
+
+    const projected = projectedLeaves(
+      createTripPresentation(fixture).days[0]!.items,
+    )[0]!;
+
+    expect(projected.placeLine).toBeNull();
+    expect(projected.mapAction?.kind).toBe("search");
+  });
+
+  it.each([
+    [{ optional: true, tentative: true, flexible: true }, "tentative"],
+    [{ optional: true, tentative: false, flexible: true }, "optional"],
+    [{ optional: false, tentative: false, flexible: true }, null],
+  ] as const)(
+    "shows at most one state label for a standalone entity (%o)",
+    (state, expected) => {
+      const fixture = structuredClone(goldenOsakaCanonicalTrip);
+      fixture.entities[0].state = { ...state, unresolved: false };
+      const day = createTripPresentation(fixture).days[0]!;
+      const projected = projectedLeaves([...day.items, ...day.optional]).find(
+        (entity) => entity.id === fixture.entities[0].id,
+      )!;
+
+      expect(projected.stateLabel).toBe(expected);
+    },
+  );
+
+  it("drops state labels for members of a choose-one group", () => {
+    const fixture = structuredClone(goldenOsakaCanonicalTrip);
+    const [first, second] = fixture.entities.filter(
+      (entity) => entity.day_id === fixture.entities[0].day_id,
+    );
+    for (const entity of [first!, second!])
+      entity.state = {
+        optional: false,
+        tentative: true,
+        flexible: true,
+        unresolved: false,
+      };
+    fixture.relationships.push({
+      id: "rel:choose-dinner",
+      type: "alternative",
+      member_entity_ids: [first!.id, second!.id],
+      parent_entity_id: null,
+      child_entity_ids: [],
+      condition: null,
+    });
+
+    const leaves = projectedLeaves(
+      createTripPresentation(fixture).days[0]!.items,
+    );
+
+    expect(
+      leaves
+        .filter((entity) => [first!.id, second!.id].includes(entity.id))
+        .map((entity) => entity.stateLabel),
+    ).toEqual([null, null]);
+  });
+
   it("projects supporting references without synthesizing absent actions", () => {
     const fixture = structuredClone(goldenOsakaCanonicalTrip);
     fixture.supporting_items = [
@@ -254,6 +421,7 @@ describe("Golden Presentation Projection", () => {
         text: "場內地圖",
         url: "https://example.com/venue-map",
         unresolved: false,
+        group: null,
       },
       {
         id: "support:missing",
@@ -261,12 +429,22 @@ describe("Golden Presentation Projection", () => {
         text: "![image.png](image%201.png)",
         url: null,
         unresolved: true,
+        group: null,
+      },
+      {
+        id: "support:resolved-no-url",
+        kind: "asset",
+        text: "已匯入的場內交通參考",
+        url: null,
+        unresolved: false,
+        group: null,
       },
     ];
 
-    const projected = createTripPresentation(fixture).supportingItems;
+    const presentation = createTripPresentation(fixture);
 
-    expect(projected[0]).toMatchObject({
+    expect(presentation.supportingItems).toHaveLength(2);
+    expect(presentation.supportingItems[0]).toMatchObject({
       role: "supporting_reference",
       text: "場內地圖",
       action: {
@@ -275,14 +453,124 @@ describe("Golden Presentation Projection", () => {
         rel: "noopener noreferrer",
       },
     });
-    expect(projected[1]).toMatchObject({
-      unresolved: true,
+    // The unimported image stays accounted for but renders no placeholder.
+    expect(presentation.unrenderedSupportingIds).toEqual(["support:missing"]);
+    expect(presentation.supportingItems[1]).toMatchObject({
+      id: "support:resolved-no-url",
+      displayTitle: "已匯入的場內交通參考",
+      unresolved: false,
       action: null,
-      displayTitle: "圖片附件未提供",
-      displayDetail: "image 1.png",
     });
     expect(fixture.supporting_items[1].text).toBe(
       "![image.png](image%201.png)",
     );
+  });
+
+  it("projects retained supporting items into ordered groups plus the ungrouped region", () => {
+    const fixture = structuredClone(goldenOsakaCanonicalTrip);
+    const item = (
+      id: string,
+      group: { id: string; label: string; order: number } | null,
+    ) => ({
+      id,
+      kind: "note" as const,
+      text: id,
+      url: null,
+      unresolved: false,
+      group,
+    });
+    fixture.supporting_items = [
+      item("support:food:1", {
+        id: "sheet:food",
+        label: "美食清單",
+        order: 8,
+      }),
+      item("support:ungrouped", null),
+      item("support:packing:1", {
+        id: "sheet:packing",
+        label: "行李清單",
+        order: 2,
+      }),
+      item("support:food:2", {
+        id: "sheet:food",
+        label: "美食清單",
+        order: 8,
+      }),
+      item("support:packing:2", {
+        id: "sheet:packing",
+        label: "行李清單",
+        order: 2,
+      }),
+      item("support:food:3", {
+        id: "sheet:food",
+        label: "美食清單",
+        order: 8,
+      }),
+    ];
+
+    const presentation = createTripPresentation(fixture);
+
+    expect(presentation.supportingItems.map((item) => item.id)).toEqual([
+      "support:ungrouped",
+    ]);
+    expect(
+      presentation.supportingGroups.map(({ id, label, count, items }) => ({
+        id,
+        label,
+        count,
+        itemIds: items.map((item) => item.id),
+      })),
+    ).toEqual([
+      {
+        id: "sheet:packing",
+        label: "行李清單",
+        count: 2,
+        itemIds: ["support:packing:1", "support:packing:2"],
+      },
+      {
+        id: "sheet:food",
+        label: "美食清單",
+        count: 3,
+        itemIds: ["support:food:1", "support:food:2", "support:food:3"],
+      },
+    ]);
+  });
+
+  it("fails supporting projection verification on missing or duplicate placement", () => {
+    const item = {
+      id: "support:first",
+      role: "supporting_reference",
+      kind: "note" as const,
+      text: "First",
+      displayTitle: "First",
+      unresolved: false,
+      unresolvedMessage: "這份資料還需要確認",
+      action: null,
+    };
+
+    expect(() =>
+      verifySupportingPlacement(
+        ["support:first", "support:missing"],
+        [item],
+        [],
+        [],
+      ),
+    ).toThrow(/exactly once/);
+    expect(() =>
+      verifySupportingPlacement(
+        ["support:first"],
+        [item],
+        [
+          {
+            id: "sheet:duplicate",
+            label: "Duplicate",
+            order: 0,
+            count: 1,
+            items: [item],
+          },
+        ],
+        [],
+      ),
+    ).toThrow(/exactly once/);
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -19,6 +19,63 @@ import {
 } from "./ResultDateRail";
 import { ResultDisplayItem, ResultSequenceContexts } from "./ResultEntity";
 
+type SupportingReference = TripPresentation["supportingItems"][number];
+
+function SupportingReferenceItem({ item }: { item: SupportingReference }) {
+  return (
+    <div className="py-4 first:pt-0 last:pb-0">
+      <Typography className="break-words font-editorial font-bold">
+        {item.displayTitle}
+      </Typography>
+      {item.unresolved && (
+        <Typography className="mt-1 font-utility text-xs text-trip-attention">
+          {item.unresolvedMessage}
+        </Typography>
+      )}
+      {item.action && (
+        <a
+          className="mt-2 inline-flex min-h-11 items-center font-utility font-bold text-trip-movement underline underline-offset-4"
+          href={item.action.url}
+          rel={item.action.rel}
+          target={item.action.target}
+        >
+          查看參考資料
+        </a>
+      )}
+    </div>
+  );
+}
+
+function SupportingGroupDisclosure({
+  group,
+}: {
+  group: TripPresentation["supportingGroups"][number];
+}) {
+  const disclosureId = useId();
+  const summaryId = `${disclosureId}-summary`;
+  const regionId = `${disclosureId}-region`;
+  return (
+    <Accordion className="border-t border-trip-hairline bg-trip-paper">
+      <AccordionSummary
+        aria-controls={regionId}
+        className="font-utility text-trip-ready"
+        id={summaryId}
+      >
+        <Typography variant="overline">
+          {group.label}（{group.count}）
+        </Typography>
+      </AccordionSummary>
+      <AccordionDetails>
+        <div className="divide-y divide-trip-hairline">
+          {group.items.map((item) => (
+            <SupportingReferenceItem item={item} key={item.id} />
+          ))}
+        </div>
+      </AccordionDetails>
+    </Accordion>
+  );
+}
+
 export function ResultDay({
   activeDayId,
   dateRailAccessibleLabel,
@@ -35,6 +92,9 @@ export function ResultDay({
   presentation: TripPresentation;
 }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const optionalDisclosureId = useId();
+  const optionalSummaryId = `${optionalDisclosureId}-summary`;
+  const optionalRegionId = `${optionalDisclosureId}-region`;
   const day =
     presentation.days.find((candidate) => candidate.id === activeDayId) ??
     presentation.days[0];
@@ -158,7 +218,11 @@ export function ResultDay({
               className="border-y border-trip-hairline bg-trip-paper"
               defaultExpanded={optionalInitiallyExpanded}
             >
-              <AccordionSummary className="font-utility text-trip-ready">
+              <AccordionSummary
+                aria-controls={optionalRegionId}
+                className="font-utility text-trip-ready"
+                id={optionalSummaryId}
+              >
                 <Typography variant="overline">還有體力的話</Typography>
               </AccordionSummary>
               <AccordionDetails>
@@ -176,7 +240,8 @@ export function ResultDay({
           aria-label="參考資料"
           className="mt-10 min-w-0 md:mt-0 md:self-start"
         >
-          {presentation.supportingItems.length > 0 && (
+          {(presentation.supportingItems.length > 0 ||
+            presentation.supportingGroups.length > 0) && (
             <EditorialFrame>
               <Typography
                 className="font-utility text-trip-movement"
@@ -184,35 +249,20 @@ export function ResultDay({
               >
                 參考資料
               </Typography>
-              <div className="mt-4 divide-y divide-trip-hairline">
-                {presentation.supportingItems.map((item) => (
-                  <div className="py-4 first:pt-0 last:pb-0" key={item.id}>
-                    <Typography className="break-words font-editorial font-bold">
-                      {item.displayTitle}
-                    </Typography>
-                    {item.displayDetail && (
-                      <Typography className="mt-1 break-words font-utility text-xs text-trip-muted">
-                        {item.displayDetail}
-                      </Typography>
-                    )}
-                    {item.unresolved && (
-                      <Typography className="mt-1 font-utility text-xs text-trip-attention">
-                        {item.unresolvedMessage}
-                      </Typography>
-                    )}
-                    {item.action && (
-                      <a
-                        className="mt-2 inline-flex min-h-11 items-center font-utility font-bold text-trip-movement underline underline-offset-4"
-                        href={item.action.url}
-                        rel={item.action.rel}
-                        target={item.action.target}
-                      >
-                        查看參考資料
-                      </a>
-                    )}
-                  </div>
-                ))}
-              </div>
+              {presentation.supportingItems.length > 0 && (
+                <div className="mt-4 divide-y divide-trip-hairline">
+                  {presentation.supportingItems.map((item) => (
+                    <SupportingReferenceItem item={item} key={item.id} />
+                  ))}
+                </div>
+              )}
+              {presentation.supportingGroups.length > 0 && (
+                <div className="mt-4">
+                  {presentation.supportingGroups.map((group) => (
+                    <SupportingGroupDisclosure group={group} key={group.id} />
+                  ))}
+                </div>
+              )}
             </EditorialFrame>
           )}
         </aside>

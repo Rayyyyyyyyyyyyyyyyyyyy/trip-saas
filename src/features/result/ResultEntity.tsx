@@ -20,47 +20,73 @@ function markerTone(entity: ProjectedEntity): EditorialMarkerTone {
   return "neutral";
 }
 
+const stateLabels = {
+  tentative: { text: "暫定", className: "text-trip-attention" },
+  optional: { text: "可選", className: "text-trip-ready" },
+} as const;
+
+function MapAction({ entity }: { entity: ProjectedEntity }) {
+  const action = entity.mapAction;
+  if (!action) return null;
+  return (
+    <Button
+      aria-label={action.accessibleName}
+      className="min-h-11 min-w-11 shrink-0 border-trip-ink px-3 font-utility text-sm text-trip-ink"
+      component="a"
+      href={action.url}
+      rel={action.rel}
+      target={action.target}
+      variant="outlined"
+    >
+      {action.label}
+    </Button>
+  );
+}
+
 function EntityBody({ entity }: { entity: ProjectedEntity }) {
+  const label = entity.stateLabel ? stateLabels[entity.stateLabel] : null;
   return (
     <div className="min-w-0">
-      <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-        {entity.time.label && (
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+          {entity.time.label && (
+            <Typography
+              className="shrink-0 font-utility text-xs font-bold tabular-nums text-trip-muted"
+              component="span"
+            >
+              {entity.time.label}
+            </Typography>
+          )}
           <Typography
-            className="shrink-0 font-utility text-xs font-bold tabular-nums text-trip-muted"
-            component="span"
+            className={
+              entity.role === "transit_connector"
+                ? "min-w-0 font-utility text-sm leading-snug text-trip-movement"
+                : "min-w-0 font-editorial text-[19px] font-bold leading-snug"
+            }
+            variant="h3"
           >
-            {entity.time.label}
+            {entity.title}
           </Typography>
-        )}
-        <Typography
-          className={
-            entity.role === "transit_connector"
-              ? "min-w-0 font-utility text-sm leading-snug text-trip-movement"
-              : "min-w-0 font-editorial text-[19px] font-bold leading-snug"
-          }
-          variant="h3"
-        >
-          {entity.title}
-        </Typography>
+        </div>
+        {!entity.placeLine && <MapAction entity={entity} />}
       </div>
 
-      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-utility text-xs">
-        {entity.state.optional && <span className="text-trip-ready">可選</span>}
-        {entity.state.tentative && (
-          <span className="text-trip-attention">暫定</span>
-        )}
-        {entity.state.flexible && <span className="text-trip-ready">彈性</span>}
-        {entity.unresolved.any && (
-          <span className="text-trip-attention">待確認</span>
-        )}
-      </div>
+      {(label || entity.unresolved.any) && (
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-utility text-xs">
+          {label && <span className={label.className}>{label.text}</span>}
+          {entity.unresolved.any && (
+            <span className="text-trip-attention">待確認</span>
+          )}
+        </div>
+      )}
 
-      {(entity.place.name || entity.place.address) && (
-        <Typography className="mt-2 font-utility text-sm text-trip-muted">
-          {[entity.place.name, entity.place.address]
-            .filter(Boolean)
-            .join(" · ")}
-        </Typography>
+      {entity.placeLine && (
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <Typography className="min-w-0 font-utility text-sm text-trip-muted">
+            {entity.placeLine}
+          </Typography>
+          <MapAction entity={entity} />
+        </div>
       )}
 
       {entity.dependencies.length > 0 && (
@@ -114,11 +140,7 @@ function EntityBody({ entity }: { entity: ProjectedEntity }) {
               target={action.target}
               variant="outlined"
             >
-              {action.kind === "map"
-                ? entity.role === "optional"
-                  ? entity.title
-                  : "開啟地圖"
-                : action.label}
+              {action.label}
             </Button>
           ))}
         </div>

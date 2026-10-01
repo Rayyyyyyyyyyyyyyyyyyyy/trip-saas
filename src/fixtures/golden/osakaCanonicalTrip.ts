@@ -249,7 +249,7 @@ const entitiesByDay = days.map((day) => {
 });
 
 export const goldenOsakaCanonicalTrip: CanonicalTrip = {
-  schema_version: "canonical-trip.v2",
+  schema_version: "canonical-trip.v3",
   id: "golden:osaka-2026",
   title: trip.title,
   start_date: days[0].date,

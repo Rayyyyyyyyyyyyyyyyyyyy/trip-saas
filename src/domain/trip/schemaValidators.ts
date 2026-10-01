@@ -1,6 +1,7 @@
 import type { ErrorObject, ValidateFunction } from "ajv";
 import {
   canonicalTripV1Validator,
+  canonicalTripV2Validator,
   canonicalTripValidator,
   parsedTripDraftValidator,
   semanticInterpretationResultValidator,
@@ -35,3 +36,5 @@ export const validateCanonicalTripSchema = (value: unknown) =>
   validationResult(canonicalTripValidator, value);
 export const validateCanonicalTripV1Schema = (value: unknown) =>
   validationResult(canonicalTripV1Validator, value);
+export const validateCanonicalTripV2Schema = (value: unknown) =>
+  validationResult(canonicalTripV2Validator, value);

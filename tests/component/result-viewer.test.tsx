@@ -218,6 +218,7 @@ function stressPresentation(): TripPresentation {
       text: "![image.png](image%201.png)",
       url: null,
       unresolved: true,
+      group: null,
     },
   ];
   return createTripPresentation(trip);
@@ -418,7 +419,21 @@ describe("source-agnostic Result UI", () => {
         onOpenDay={() => undefined}
       />,
     );
-    await userEvent.setup().click(screen.getByText("還有體力的話"));
+    const optionalSummary = screen.getByRole("button", {
+      name: "還有體力的話",
+    });
+    await userEvent.setup().click(optionalSummary);
+    const optionalDisclosure = screen.getByRole("region", {
+      name: "還有體力的話",
+    });
+    expect(optionalSummary).toHaveAttribute(
+      "aria-controls",
+      optionalDisclosure.id,
+    );
+    expect(optionalDisclosure).toHaveAttribute(
+      "aria-labelledby",
+      optionalSummary.id,
+    );
     for (const entity of relationshipStateCanonicalTrip.entities) {
       expect(
         container.querySelectorAll(`[data-entity-id="${entity.id}"]`),
@@ -427,11 +442,13 @@ describe("source-agnostic Result UI", () => {
     const planA = screen
       .getByRole("heading", { name: "Plan A" })
       .closest("article")!;
+    // Plan A is a choose-one member: the group heading carries its optional/
+    // tentative meaning, so the member repeats no state label.
+    for (const text of ["可選", "暫定", "彈性"]) {
+      expect(planA).not.toHaveTextContent(text);
+    }
     for (const text of [
       "23:30–翌日 01:00",
-      "可選",
-      "暫定",
-      "彈性",
       "待確認",
       "保留關係成員的原始指示",
       "大阪市內地址待確認",
@@ -606,20 +623,19 @@ describe("source-agnostic Result UI", () => {
     expect(screen.getByText("選一個")).toBeVisible();
     expect(screen.getByText(/需要處理/)).toBeVisible();
     expect(screen.getAllByText("待確認").length).toBeGreaterThan(0);
-    expect(screen.getByText("圖片附件未提供")).toBeVisible();
-    expect(screen.getByText("image 1.png")).toBeVisible();
-    expect(
-      screen.getByText("目前只匯入了 Markdown，這張圖片附件沒有包含在內。"),
-    ).toBeVisible();
+    // An unimported image leaves no frame, notice, or raw Markdown behind.
+    expect(screen.queryByText("圖片附件未提供")).not.toBeInTheDocument();
+    expect(screen.queryByText("image 1.png")).not.toBeInTheDocument();
     expect(
       screen.queryByText("![image.png](image%201.png)"),
     ).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /圖片附件未提供/ })).toBeNull();
 
     await user.click(screen.getByText("還有體力的話"));
     expect(screen.getByText("Optional free time")).toBeVisible();
 
-    const exactLink = screen.getByRole("link", { name: "開啟地圖" });
+    const exactLink = screen.getByRole("link", {
+      name: "開啟「Exact event」的地圖連結",
+    });
     expect(exactLink).toHaveAttribute(
       "href",
       "https://example.com/exact-source-url",
@@ -652,4 +668,77 @@ describe("source-agnostic Result UI", () => {
       .closest("article");
     expect(untimedArticle).not.toHaveTextContent("時間未定");
   });
+
+  it.each([390, 1280])(
+    "renders supporting groups as accessible default-collapsed keyboard disclosures at %ipx",
+    async (width) => {
+      const originalWidth = window.innerWidth;
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: width,
+      });
+      try {
+        const trip = structuredClone(validCanonicalTrip);
+        trip.supporting_items = [
+          {
+            id: "support:ungrouped",
+            kind: "note",
+            text: "未分組提醒",
+            url: null,
+            unresolved: false,
+            group: null,
+          },
+          ...Array.from({ length: 42 }, (_, index) => ({
+            id: `support:food:${index + 1}`,
+            kind: "note" as const,
+            text: `餐廳 ${index + 1}`,
+            url: null,
+            unresolved: false,
+            group: {
+              id: "sheet:food",
+              label: "美食清單",
+              order: 3,
+            },
+          })),
+        ];
+        render(
+          <ResultDay
+            activeDayId={trip.days[0]!.id}
+            onOpenDay={() => undefined}
+            presentation={createTripPresentation(trip)}
+          />,
+        );
+
+        const summary = screen.getByRole("button", {
+          name: "美食清單（42）",
+        });
+        expect(summary).toHaveAttribute("aria-expanded", "false");
+        expect(
+          screen.queryByRole("region", { name: "美食清單（42）" }),
+        ).not.toBeInTheDocument();
+        expect(
+          screen.getByText("未分組提醒").compareDocumentPosition(summary) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+
+        summary.focus();
+        await userEvent.setup().keyboard("{Enter}");
+
+        const region = screen.getByRole("region", {
+          name: "美食清單（42）",
+        });
+        expect(summary).toHaveFocus();
+        expect(summary).toHaveAttribute("aria-expanded", "true");
+        expect(summary).toHaveAttribute("aria-controls", region.id);
+        expect(region).toHaveAttribute("aria-labelledby", summary.id);
+        expect(within(region).getByText("餐廳 1")).toBeVisible();
+        expect(within(region).getByText("餐廳 42")).toBeVisible();
+      } finally {
+        Object.defineProperty(window, "innerWidth", {
+          configurable: true,
+          value: originalWidth,
+        });
+      }
+    },
+  );
 });

@@ -71,7 +71,7 @@ function timeSemanticEntity(
 }
 
 export const timeSemanticCanonicalTrip: CanonicalTrip = {
-  schema_version: "canonical-trip.v2",
+  schema_version: "canonical-trip.v3",
   id: "semantic:trip:time",
   title: "Time semantics",
   start_date: "2026-09-10",

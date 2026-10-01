@@ -24,15 +24,12 @@ test("uses exact source-provided Maps and Tabelog URLs", async ({ page }) => {
   const consolaCard = page.getByRole("article").filter({
     has: page.getByRole("heading", { name: consola.title, exact: true }),
   });
-  await expect(
-    consolaCard.getByRole("link", { name: "開啟地圖" }),
-  ).toHaveAttribute("href", consola.map!);
-  await expect(
-    consolaCard.getByRole("link", { name: "開啟地圖" }),
-  ).toHaveAttribute("rel", "noopener noreferrer");
-  await expect(
-    consolaCard.getByRole("link", { name: "開啟地圖" }),
-  ).toHaveAttribute("target", "_blank");
+  const consolaLink = consolaCard.getByRole("link", { name: "開啟地圖" });
+  await expect(consolaLink).toHaveText("開啟地圖");
+  await expect(consolaLink).toHaveAttribute("aria-label", "開啟地圖");
+  await expect(consolaLink).toHaveAttribute("href", consola.map!);
+  await expect(consolaLink).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(consolaLink).toHaveAttribute("target", "_blank");
 
   const seijiroCard = page.getByRole("article").filter({
     has: page.getByRole("heading", { name: seijiro.title, exact: true }),
@@ -40,18 +37,40 @@ test("uses exact source-provided Maps and Tabelog URLs", async ({ page }) => {
   await expect(
     seijiroCard.getByRole("link", { name: "食べログ" }),
   ).toHaveAttribute("href", seijiro.tabelog!);
-  await expect(page.getByRole("link", { name: ujiRiver.name })).toHaveAttribute(
+  await expect(
+    seijiroCard.getByRole("link", { name: "食べログ" }),
+  ).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(
+    seijiroCard.getByRole("link", { name: "食べログ" }),
+  ).toHaveAttribute("target", "_blank");
+
+  const ujiRiverCard = page.getByRole("article").filter({
+    has: page.getByRole("heading", { name: ujiRiver.name, exact: true }),
+  });
+  const ujiRiverLink = ujiRiverCard.getByRole("link", {
+    name: ujiRiver.name,
+  });
+  await expect(ujiRiverLink).toHaveText(ujiRiver.name);
+  await expect(ujiRiverLink).toHaveAttribute("aria-label", ujiRiver.name);
+  await expect(ujiRiverLink).toHaveAttribute("href", ujiRiver.map);
+  await expect(ujiRiverLink).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(ujiRiverLink).toHaveAttribute("target", "_blank");
+
+  await page.getByRole("tab", { name: "09/10 THU 大阪" }).click();
+  const ramenSearch = page.getByRole("link", {
+    name: "以「野口太郎ラーメン 北新地本店」搜尋 Google 地圖",
+  });
+  await expect(ramenSearch).toHaveAttribute(
+    "aria-label",
+    "以「野口太郎ラーメン 北新地本店」搜尋 Google 地圖",
+  );
+  await expect(ramenSearch).toHaveAttribute(
     "href",
-    ujiRiver.map,
+    "https://www.google.com/maps/search/?api=1&query=%E9%87%8E%E5%8F%A3%E5%A4%AA%E9%83%8E%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3%20%E5%8C%97%E6%96%B0%E5%9C%B0%E6%9C%AC%E5%BA%97",
   );
-  await expect(page.getByRole("link", { name: ujiRiver.name })).toHaveAttribute(
-    "rel",
-    "noopener noreferrer",
-  );
-  await expect(page.getByRole("link", { name: ujiRiver.name })).toHaveAttribute(
-    "target",
-    "_blank",
-  );
+  await expect(ramenSearch).toHaveText("搜尋 Google 地圖");
+  await expect(ramenSearch).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(ramenSearch).toHaveAttribute("target", "_blank");
 });
 
 test("synchronizes checklist and reservation status with USJ pending by default", async ({

@@ -1,8 +1,7 @@
-const googleMapsSearchUrl = (query: string) =>
-  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+import { mapSearchHref } from "../result/mapSearchHref";
 
 export function goldenMapHref(placeOrUrl: string) {
   return placeOrUrl.startsWith("https://")
     ? placeOrUrl
-    : googleMapsSearchUrl(placeOrUrl);
+    : mapSearchHref(placeOrUrl);
 }

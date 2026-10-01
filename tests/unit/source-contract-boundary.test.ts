@@ -102,20 +102,24 @@ describe("Source contract architecture boundary", () => {
     expect(violations).toEqual([]);
   });
 
-  it("declares the tabular variant without enabling spreadsheet intake", () => {
-    // The dormant variant must validate — that is the seam Spreadsheet V0.2
-    // consumes — while no shipped code constructs or accepts one.
+  it("keeps the tabular seam bounded before spreadsheet intake", () => {
+    // The variant validates and Group 2 may read its source-neutral sheet
+    // evidence, while no adapter or intake surface constructs or accepts one.
     expect(
       validateUnifiedSourceDocumentSchema(validTabularSourceDocument),
     ).toEqual({ valid: true, errors: [] });
 
-    // Only the source domain may name the variant: it declares it and the
-    // gate validates its references. An adapter, feature, provider, or Result
-    // file mentioning it would mean spreadsheet handling had leaked in.
+    // The source domain declares/validates it. The one trip-domain derivation
+    // may read it after response gates; adapters, features, providers, and
+    // Result remain forbidden until their later task groups.
     const leaked = sourceFilesUnder(srcRoot)
       .filter((file) => readFileSync(file, "utf8").includes('"tabular_region"'))
       .map((file) => relative(srcRoot, file))
-      .filter((file) => !file.startsWith("domain/source/"));
+      .filter(
+        (file) =>
+          !file.startsWith("domain/source/") &&
+          file !== "domain/trip/deriveSupportingGroups.ts",
+      );
 
     expect(leaked).toEqual([]);
   });

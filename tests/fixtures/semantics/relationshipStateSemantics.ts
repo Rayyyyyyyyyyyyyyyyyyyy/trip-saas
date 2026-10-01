@@ -172,7 +172,7 @@ entities[0].actions = [
 ];
 
 export const relationshipStateCanonicalTrip: CanonicalTrip = {
-  schema_version: "canonical-trip.v2",
+  schema_version: "canonical-trip.v3",
   id: "semantic:trip:relationship-state",
   title: "Relationship and state semantics",
   start_date: day.date,

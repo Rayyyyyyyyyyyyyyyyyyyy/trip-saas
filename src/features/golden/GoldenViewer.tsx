@@ -65,7 +65,11 @@ export function GoldenViewer({ onShowHome }: GoldenViewerProps) {
   );
   const [drawer, setDrawer] = useState(false);
   const presentation = useMemo(
-    () => createTripPresentation(goldenOsakaCanonicalTrip),
+    () =>
+      createTripPresentation(goldenOsakaCanonicalTrip, {
+        sourceMapActionLabel: (entity) =>
+          entity.state.optional ? entity.title : "開啟地圖",
+      }),
     [],
   );
 

@@ -15,6 +15,7 @@ import type {
   TripRelationship,
   TripTime,
 } from "../../domain/trip/types";
+import { mapSearchHref } from "./mapSearchHref";
 
 export interface ProjectedTime {
   kind: TimeKind;
@@ -55,7 +56,22 @@ export interface ProjectedEntity {
   readiness: ReadinessDependency | null;
   dependencies: ProjectedDependency[];
   notes: string[];
+  /** Non-map source actions; the map action is resolved into `mapAction`. */
   actions: Array<TripAction & { target: "_blank"; rel: "noopener noreferrer" }>;
+  /** Source map URL first; otherwise a labeled search for the verbatim place text. */
+  mapAction: {
+    kind: "source" | "search";
+    url: string;
+    query: string | null;
+    label: string;
+    accessibleName: string;
+    target: "_blank";
+    rel: "noopener noreferrer";
+  } | null;
+  /** Place text to show on its own line, or null when absent or already in the title. */
+  placeLine: string | null;
+  /** At most one state label; alternative members carry none. */
+  stateLabel: "tentative" | "optional" | null;
   unresolved: { entity: boolean; place: boolean; any: boolean };
 }
 
@@ -138,7 +154,67 @@ function presentationRole(entity: CanonicalEntity): ProjectedEntity["role"] {
   return "timeline_item";
 }
 
-function projectEntity(entity: CanonicalEntity): ProjectedEntity {
+const normalizeText = (text: string | null) =>
+  (text ?? "").replace(/\s+/g, " ").trim();
+
+function projectMapAction(
+  entity: CanonicalEntity,
+  sourceLabel?: (entity: CanonicalEntity) => string,
+): ProjectedEntity["mapAction"] {
+  const external = { target: "_blank", rel: "noopener noreferrer" } as const;
+  const sourceUrl =
+    entity.place.url ??
+    entity.actions.find((action) => action.kind === "map")?.url ??
+    null;
+  if (sourceUrl) {
+    const label = sourceLabel?.(entity) ?? "地圖";
+    return {
+      kind: "source",
+      url: sourceUrl,
+      query: null,
+      label,
+      accessibleName: sourceLabel ? label : `開啟「${entity.title}」的地圖連結`,
+      ...external,
+    };
+  }
+  const query = [entity.place.name, entity.place.address].find(
+    (candidate): candidate is string =>
+      candidate !== null && candidate.trim().length > 0,
+  );
+  if (query === undefined) return null;
+  return {
+    kind: "search",
+    url: mapSearchHref(query),
+    query,
+    label: "搜尋 Google 地圖",
+    accessibleName: `以「${query}」搜尋 Google 地圖`,
+    ...external,
+  };
+}
+
+function projectPlaceLine(entity: CanonicalEntity) {
+  const title = normalizeText(entity.title);
+  const parts = [entity.place.name, entity.place.address]
+    .filter((part): part is string => Boolean(part?.trim()))
+    .filter((part) => !title.includes(normalizeText(part)));
+  return parts.length ? parts.join(" · ") : null;
+}
+
+function projectStateLabel(
+  entity: CanonicalEntity,
+  isAlternativeMember: boolean,
+): ProjectedEntity["stateLabel"] {
+  if (isAlternativeMember) return null;
+  if (entity.state.tentative) return "tentative";
+  if (entity.state.optional) return "optional";
+  return null;
+}
+
+function projectEntity(
+  entity: CanonicalEntity,
+  isAlternativeMember: boolean,
+  sourceMapActionLabel?: (entity: CanonicalEntity) => string,
+): ProjectedEntity {
   const modifiers = Object.entries(entity.state)
     .filter(([, enabled]) => enabled)
     .map(([name]) => name);
@@ -169,11 +245,16 @@ function projectEntity(entity: CanonicalEntity): ProjectedEntity {
     readiness: entity.readiness,
     dependencies,
     notes: entity.notes,
-    actions: entity.actions.map((action) => ({
-      ...action,
-      target: "_blank",
-      rel: "noopener noreferrer",
-    })),
+    actions: entity.actions
+      .filter((action) => action.kind !== "map")
+      .map((action) => ({
+        ...action,
+        target: "_blank",
+        rel: "noopener noreferrer",
+      })),
+    mapAction: projectMapAction(entity, sourceMapActionLabel),
+    placeLine: projectPlaceLine(entity),
+    stateLabel: projectStateLabel(entity, isAlternativeMember),
     unresolved: {
       entity: entity.state.unresolved,
       place: entity.place.unresolved,
@@ -182,31 +263,21 @@ function projectEntity(entity: CanonicalEntity): ProjectedEntity {
   };
 }
 
+// An unresolved asset without a URL is an image reference the source named but
+// did not supply. Resolved supporting assets remain visible even without an
+// action URL.
+const isUnimportedAsset = (item: SupportingItem) =>
+  item.kind === "asset" && item.unresolved && item.url === null;
+
 function projectSupportingItem(item: SupportingItem) {
-  const missingAsset = item.kind === "asset" && item.url === null;
-  const markdownImage = missingAsset
-    ? /^!\[[^\]]*\]\((.+)\)$/.exec(item.text?.trim() ?? "")
-    : null;
-  const rawAssetName = markdownImage?.[1]?.split(/[\\/]/).at(-1) ?? null;
-  let assetName = rawAssetName;
-  if (rawAssetName) {
-    try {
-      assetName = decodeURIComponent(rawAssetName);
-    } catch {
-      assetName = rawAssetName;
-    }
-  }
   return {
     id: item.id,
     role: "supporting_reference",
     kind: item.kind,
     text: item.text,
-    displayTitle: missingAsset ? "圖片附件未提供" : (item.text ?? item.kind),
-    displayDetail: missingAsset ? assetName : null,
+    displayTitle: item.text ?? item.kind,
     unresolved: item.unresolved,
-    unresolvedMessage: missingAsset
-      ? "目前只匯入了 Markdown，這張圖片附件沒有包含在內。"
-      : "這份資料還需要確認",
+    unresolvedMessage: "這份資料還需要確認",
     action: item.url
       ? {
           url: item.url,
@@ -215,6 +286,103 @@ function projectSupportingItem(item: SupportingItem) {
         }
       : null,
   };
+}
+
+export type ProjectedSupportingItem = ReturnType<typeof projectSupportingItem>;
+
+export interface ProjectedSupportingGroup {
+  id: string;
+  label: string;
+  order: number;
+  count: number;
+  items: ProjectedSupportingItem[];
+}
+
+export function verifySupportingPlacement(
+  canonicalIds: string[],
+  ungroupedItems: ProjectedSupportingItem[],
+  groups: ProjectedSupportingGroup[],
+  unrenderedIds: string[],
+) {
+  const expected = new Set<string>();
+  for (const id of canonicalIds) {
+    if (expected.has(id)) {
+      throw new Error("Canonical supporting items contain duplicate IDs.");
+    }
+    expected.add(id);
+  }
+  const placed = [
+    ...ungroupedItems.map((item) => item.id),
+    ...groups.flatMap((group) => group.items.map((item) => item.id)),
+    ...unrenderedIds,
+  ];
+  const placementCounts = new Map<string, number>();
+  for (const id of placed) {
+    placementCounts.set(id, (placementCounts.get(id) ?? 0) + 1);
+  }
+  if (
+    placed.some((id) => !expected.has(id)) ||
+    [...expected].some((id) => placementCounts.get(id) !== 1)
+  ) {
+    throw new Error(
+      "Supporting projection must place every canonical item exactly once.",
+    );
+  }
+}
+
+function projectSupportingItems(items: SupportingItem[]) {
+  const ungroupedItems: ProjectedSupportingItem[] = [];
+  const groupsById = new Map<
+    string,
+    ProjectedSupportingGroup & { firstItemIndex: number }
+  >();
+  const unrenderedIds: string[] = [];
+
+  items.forEach((item, itemIndex) => {
+    if (isUnimportedAsset(item)) {
+      unrenderedIds.push(item.id);
+      return;
+    }
+    const projected = projectSupportingItem(item);
+    if (!item.group) {
+      ungroupedItems.push(projected);
+      return;
+    }
+    const existing = groupsById.get(item.group.id);
+    if (existing) {
+      if (
+        existing.label !== item.group.label ||
+        existing.order !== item.group.order
+      ) {
+        throw new Error(
+          "Canonical supporting group has inconsistent label or order.",
+        );
+      }
+      existing.items.push(projected);
+      existing.count = existing.items.length;
+      return;
+    }
+    groupsById.set(item.group.id, {
+      ...item.group,
+      count: 1,
+      firstItemIndex: itemIndex,
+      items: [projected],
+    });
+  });
+
+  const groups = [...groupsById.values()]
+    .sort(
+      (left, right) =>
+        left.order - right.order || left.firstItemIndex - right.firstItemIndex,
+    )
+    .map(({ firstItemIndex: _firstItemIndex, ...group }) => group);
+  verifySupportingPlacement(
+    items.map((item) => item.id),
+    ungroupedItems,
+    groups,
+    unrenderedIds,
+  );
+  return { groups, ungroupedItems, unrenderedIds };
 }
 
 function compactEntityReference(entity: ProjectedEntity) {
@@ -261,8 +429,24 @@ function itemEntityIds(items: ProjectedDayItem[]): string[] {
   );
 }
 
-export function createTripPresentation(canonicalTrip: CanonicalTrip) {
-  const projectedEntities = canonicalTrip.entities.map(projectEntity);
+export function createTripPresentation(
+  canonicalTrip: CanonicalTrip,
+  options: {
+    sourceMapActionLabel?: (entity: CanonicalEntity) => string;
+  } = {},
+) {
+  const alternativeMemberIds = new Set(
+    canonicalTrip.relationships
+      .filter((relationship) => relationship.type === "alternative")
+      .flatMap((relationship) => relationship.member_entity_ids),
+  );
+  const projectedEntities = canonicalTrip.entities.map((entity) =>
+    projectEntity(
+      entity,
+      alternativeMemberIds.has(entity.id),
+      options.sourceMapActionLabel,
+    ),
+  );
   const projectedEntitiesById = new Map(
     projectedEntities.map((entity) => [entity.id, entity]),
   );
@@ -309,8 +493,8 @@ export function createTripPresentation(canonicalTrip: CanonicalTrip) {
         },
       ];
     });
-  const supportingItems = canonicalTrip.supporting_items.map(
-    projectSupportingItem,
+  const supportingProjection = projectSupportingItems(
+    canonicalTrip.supporting_items,
   );
   const entitiesByDay = new Map<string | null, ProjectedEntity[]>();
   for (const entity of projectedEntities) {
@@ -429,7 +613,9 @@ export function createTripPresentation(canonicalTrip: CanonicalTrip) {
         subtitle,
       })),
     },
-    supportingItems,
+    supportingItems: supportingProjection.ungroupedItems,
+    supportingGroups: supportingProjection.groups,
+    unrenderedSupportingIds: supportingProjection.unrenderedIds,
     undated,
     days: projectedDays,
   };

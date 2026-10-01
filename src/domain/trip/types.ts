@@ -169,15 +169,24 @@ export interface DraftRelationship extends TripRelationship {
   source_refs: string[];
 }
 
+export interface SupportingGroup {
+  id: string;
+  label: string;
+  order: number;
+}
+
 export interface SupportingItem {
   id: StableId;
   kind: "reference" | "instruction" | "timetable" | "asset" | "note" | "other";
   text: NullableText;
   url: NullableText;
   unresolved: boolean;
+  group: SupportingGroup | null;
 }
 
-export interface DraftSupportingItem extends SupportingItem {
+export interface DraftSupportingItem extends Omit<SupportingItem, "group"> {
+  /** Absent only on the provider result before deterministic derivation. */
+  group?: SupportingGroup | null;
   source_refs: string[];
 }
 
@@ -211,7 +220,7 @@ export interface ParsedTripDraft {
 }
 
 export interface CanonicalTrip {
-  schema_version: "canonical-trip.v2";
+  schema_version: "canonical-trip.v3";
   id: StableId;
   title: NullableText;
   start_date: NullableText;
@@ -224,8 +233,18 @@ export interface CanonicalTrip {
   supporting_items: SupportingItem[];
 }
 
-export interface LegacyCanonicalTripV1
-  extends Omit<CanonicalTrip, "schema_version" | "entities"> {
+export interface LegacyCanonicalTripV2 extends Omit<
+  CanonicalTrip,
+  "schema_version" | "supporting_items"
+> {
+  schema_version: "canonical-trip.v2";
+  supporting_items: Array<Omit<SupportingItem, "group">>;
+}
+
+export interface LegacyCanonicalTripV1 extends Omit<
+  LegacyCanonicalTripV2,
+  "schema_version" | "entities"
+> {
   schema_version: "canonical-trip.v1";
   entities: Array<
     Omit<CanonicalEntity, "provenance"> & {

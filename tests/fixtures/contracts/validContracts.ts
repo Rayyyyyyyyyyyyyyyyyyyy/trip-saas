@@ -133,7 +133,7 @@ export const validInsufficientInterpretationResult: SemanticInterpretationResult
   };
 
 export const validCanonicalTrip: CanonicalTrip = {
-  schema_version: "canonical-trip.v2",
+  schema_version: "canonical-trip.v3",
   id: "trip:fixture-001",
   title: "One day",
   start_date: "2026-09-10",

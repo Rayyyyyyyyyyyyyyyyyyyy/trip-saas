@@ -124,6 +124,7 @@ export function buildCanonicalTrip(
       text: item.text,
       url: item.url,
       unresolved: item.unresolved,
+      group: item.group ? copy(item.group) : null,
     })),
   };
 }

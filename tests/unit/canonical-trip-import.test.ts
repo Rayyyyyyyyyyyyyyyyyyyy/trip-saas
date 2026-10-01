@@ -55,6 +55,15 @@ describe("CanonicalTrip JSON import", () => {
         overridden_fields: entity.provenance.overridden_fields,
       },
     }));
+    legacy.supporting_items = [
+      {
+        id: "support:v1-note",
+        kind: "note",
+        text: "Legacy v1 reference",
+        url: null,
+        unresolved: false,
+      },
+    ];
 
     const migrated = await importCanonicalTripFile(
       {
@@ -66,7 +75,7 @@ describe("CanonicalTrip JSON import", () => {
       target,
     );
 
-    expect(migrated.schema_version).toBe("canonical-trip.v2");
+    expect(migrated.schema_version).toBe("canonical-trip.v3");
     expect(migrated.id).toBe(legacy.id);
     expect(migrated.entities[0]).toMatchObject({
       id: legacy.entities[0].id,
@@ -77,6 +86,36 @@ describe("CanonicalTrip JSON import", () => {
         locator_refs: [],
       },
     });
+    expect(migrated.supporting_items[0]!.group).toBeNull();
+    expect(target.replaceActive).toHaveBeenCalledWith(migrated);
+  });
+
+  it("accepts v2 Canonical JSON and adds null supporting groups", async () => {
+    const target = repository();
+    const legacy = structuredClone(trip) as any;
+    legacy.schema_version = "canonical-trip.v2";
+    legacy.supporting_items = [
+      {
+        id: "support:v2-note",
+        kind: "note",
+        text: "Legacy reference",
+        url: null,
+        unresolved: false,
+      },
+    ];
+
+    const migrated = await importCanonicalTripFile(
+      {
+        name: "v2-trip.json",
+        size: 100,
+        type: "application/json",
+        text: async () => JSON.stringify(legacy),
+      },
+      target,
+    );
+
+    expect(migrated.schema_version).toBe("canonical-trip.v3");
+    expect(migrated.supporting_items[0]!.group).toBeNull();
     expect(target.replaceActive).toHaveBeenCalledWith(migrated);
   });
 

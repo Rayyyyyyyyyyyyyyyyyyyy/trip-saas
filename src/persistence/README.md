@@ -14,6 +14,11 @@ they do not read object stores directly.
   leaves the prior active trip unchanged.
 - Every read validates repository metadata and the CanonicalTrip again. Missing
   or invalid records return explicit recovery states and never enter Result UI.
+- New writes use strict `canonical-trip.v3`. Reads accept strict v1/v2/v3;
+  v2 supporting items migrate in memory with `group: null`, while v1 follows
+  the existing provenance migration and then the same v2-to-v3 path. Decode or
+  validation failure performs no write, so the stored record and active pointer
+  remain unchanged.
 - Repository records contain only CanonicalTrip plus non-secret storage metadata.
   Source documents, provider responses, Review state, and credentials do not
   belong in this database.

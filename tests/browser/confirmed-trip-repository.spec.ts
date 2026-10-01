@@ -15,7 +15,7 @@ test("atomically replaces one validated active CanonicalTrip", async ({
     firstActiveId: "golden:osaka-2026",
     initialStatus: "empty",
     invalidRejected: true,
-    legacyReadAsV2: true,
+    legacyReadAsV3: true,
     secondActiveId: "browser-test:replacement",
     storedTripCount: 1,
   });

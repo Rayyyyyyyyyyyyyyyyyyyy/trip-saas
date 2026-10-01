@@ -5,6 +5,7 @@ import type {
 } from "../domain/source/types";
 import { validateUnifiedSourceDocument } from "../domain/source/validateUnifiedSourceDocument";
 import type { TextSourceInput } from "../domain/trip/types";
+import { deriveSupportingGroups } from "../domain/trip/deriveSupportingGroups";
 import { extractMarkdownSource } from "../features/import/markdownSourceAdapter";
 import {
   createIntakeFailure,
@@ -204,8 +205,12 @@ export function useTripIntakeWorkflow(
               interpretation,
             });
           } else {
+            const reviewInterpretation = {
+              ...interpretation,
+              draft: deriveSupportingGroups(interpretation.draft, document),
+            };
             const adjustmentResult =
-              applyConservativeReviewAdjustments(interpretation);
+              applyConservativeReviewAdjustments(reviewInterpretation);
             dispatch({
               type: "review_ready",
               sessionId: session.sessionId,

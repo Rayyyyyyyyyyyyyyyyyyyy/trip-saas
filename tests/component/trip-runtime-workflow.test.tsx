@@ -109,6 +109,91 @@ async function startPasteWorkflow(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("integrated local Review workflow", () => {
+  it("derives supporting groups after provider gates and carries them through Review confirmation", async () => {
+    const user = userEvent.setup();
+    const repository = createRepository();
+    let recordedDraft: typeof validParsedTripDraft | null = null;
+    const parser: ParseTrip = vi.fn(async ({ source }: ParseTripRequest) => {
+      const pizza = source.evidence_units.find(
+        (unit) => unit.display_value === "Pizza",
+      )!;
+      const firstSourceRef = source.evidence_units[0]!.id;
+      const draft = structuredClone(validParsedTripDraft);
+      draft.trip.source_refs = [firstSourceRef];
+      draft.days[0]!.source_refs = [firstSourceRef];
+      draft.entities[0]!.source_refs = [firstSourceRef];
+      draft.supporting_items = [
+        {
+          id: "support:food",
+          kind: "note",
+          text: "Pizza",
+          url: null,
+          unresolved: false,
+          source_refs: [pizza.id],
+        },
+      ];
+      recordedDraft = draft;
+      return {
+        schema_version: "semantic-interpretation-result.v1",
+        source_schema_version: source.schema_version,
+        source_id: source.source_id,
+        status: "draft",
+        draft,
+        findings: [],
+        coverage: {
+          total_blocks: source.evidence_units.length,
+          block_dispositions: source.evidence_units.map((unit, index) => ({
+            source_ref: unit.id,
+            disposition: index === 0 ? "interpreted" : "supporting",
+          })),
+          unparsed_items: [],
+        },
+      } satisfies SemanticInterpretationResult;
+    });
+
+    render(
+      <TripRuntimeStartup
+        credentialRepository={credentialRepository}
+        localDataOperations={localDataOperations}
+        parseTrip={parser}
+        repository={repository}
+        sampleTrip={sampleTrip}
+        renderViewer={(trip) => <h1>Viewer: {trip.title}</h1>}
+      />,
+    );
+
+    await user.click(await screen.findByRole("tab", { name: "直接貼上" }));
+    await user.type(
+      screen.getByLabelText("貼上 Markdown 行程內容"),
+      "# Travel\n\n## Food list\n\nPizza",
+    );
+    await user.click(screen.getByRole("button", { name: "送給 Gemini 判讀" }));
+    expect(
+      await screen.findByRole("heading", {
+        name: "對照原文，把行程確認清楚。",
+      }),
+    ).toBeVisible();
+    expect(recordedDraft!.supporting_items[0]!.group).toBeUndefined();
+
+    await user.click(screen.getByRole("button", { name: "查看完整校對內容" }));
+    expect(screen.getByText("分類：Food list")).toBeVisible();
+    await user.click(
+      screen.getByRole("button", { name: "確認並使用這份行程" }),
+    );
+
+    await waitFor(() =>
+      expect(repository.replaceActive).toHaveBeenCalledOnce(),
+    );
+    expect(
+      vi.mocked(repository.replaceActive).mock.calls[0]![0].supporting_items[0]!
+        .group,
+    ).toEqual({
+      id: expect.stringMatching(/^heading:source:.*:block:0002$/),
+      label: "Food list",
+      order: 1,
+    });
+  });
+
   it("keeps the original interpretation intact while confirming only the conservatively adjusted candidate", async () => {
     const user = userEvent.setup();
     const repository = createRepository({ active: sampleTrip });
@@ -431,7 +516,7 @@ describe("integrated local Review workflow", () => {
       expect(repository.replaceActive).toHaveBeenCalledOnce(),
     );
     const persisted = vi.mocked(repository.replaceActive).mock.calls[0]![0];
-    expect(persisted.schema_version).toBe("canonical-trip.v2");
+    expect(persisted.schema_version).toBe("canonical-trip.v3");
     expect(persisted.entities[0].provenance).toMatchObject({
       origin: "source",
       source_id: expect.stringMatching(/^source:/),

@@ -206,7 +206,7 @@ describe("authoritative unique Result placement", () => {
       title: "Undated medical visit",
       place: { address: "SOURCE_ADDRESS_MARKER" },
       notes: ["SOURCE_NOTE_MARKER"],
-      actions: [{ url: "https://maps.example.test/undated" }],
+      mapAction: { kind: "source", url: "https://maps.example.test/undated" },
     });
     const allPrimaryIds = [
       ...presentation.days.flatMap((day) => [

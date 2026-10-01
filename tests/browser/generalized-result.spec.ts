@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { validCanonicalTrip } from "../fixtures/contracts/validContracts";
+import { seoulResultClarityCanonicalTrip } from "../fixtures/semantics/seoulResultClarity";
 
 function browserTrip() {
   const trip = structuredClone(validCanonicalTrip);
@@ -50,6 +51,29 @@ function browserTrip() {
     id: "entity:ordinary-transit",
     title: "Ordinary rail connector",
     actions: [],
+    readiness: null,
+    time: {
+      kind: "none",
+      start: null,
+      end: null,
+      daypart: null,
+      raw_text: null,
+      crosses_midnight: false,
+    },
+  });
+  trip.entities.push({
+    ...structuredClone(trip.entities[0]),
+    id: "entity:search-map",
+    title: "Chicken dinner",
+    semantic_type: "restaurant",
+    place: {
+      name: "노랑통닭 명동점",
+      address: null,
+      url: null,
+      unresolved: false,
+    },
+    actions: [],
+    reservation: null,
     readiness: null,
     time: {
       kind: "none",
@@ -121,7 +145,33 @@ function partialDateTrip() {
       text: "![image.png](image%201.png)",
       url: null,
       unresolved: true,
+      group: null,
     },
+  ];
+  return trip;
+}
+
+function groupedSupportingTrip() {
+  const trip = browserTrip();
+  trip.id = "trip:grouped-supporting";
+  trip.title = "Grouped Supporting Trip";
+  trip.supporting_items = [
+    {
+      id: "support:ungrouped",
+      kind: "note",
+      text: "未分組提醒",
+      url: null,
+      unresolved: false,
+      group: null,
+    },
+    ...Array.from({ length: 42 }, (_, index) => ({
+      id: `support:food:${index + 1}`,
+      kind: "note" as const,
+      text: `餐廳 ${index + 1}`,
+      url: null,
+      unresolved: false,
+      group: { id: "sheet:food", label: "美食清單", order: 3 },
+    })),
   ];
   return trip;
 }
@@ -173,8 +223,9 @@ test("partial-date Result keeps navigation and missing-image fallback readable",
     expect(overlaps, `${width}px navigation overlap`).toEqual([]);
   }
 
-  await expect(page.getByText("圖片附件未提供")).toBeVisible();
-  await expect(page.getByText("image 1.png")).toBeVisible();
+  // An unimported image leaves no frame, notice, or raw Markdown in Result.
+  await expect(page.getByText("圖片附件未提供")).toHaveCount(0);
+  await expect(page.getByText("image 1.png")).toHaveCount(0);
   await expect(page.getByText("![image.png](image%201.png)")).toHaveCount(0);
 });
 
@@ -287,13 +338,42 @@ test("Canonical import opens a responsive source-agnostic Overview and Day", asy
       sourceReopens: 0,
     })}`,
   );
-  const exactLink = page.getByRole("link", { name: "開啟地圖" });
+  const exactLink = page.getByRole("link", {
+    name: "開啟「Arrive」的地圖連結",
+  });
   await expect(exactLink).toHaveAttribute(
     "href",
     "https://example.com/exact-browser-map",
   );
+  await expect(exactLink).toHaveAttribute(
+    "aria-label",
+    "開啟「Arrive」的地圖連結",
+  );
+  await expect(exactLink).toHaveText("地圖");
   await expect(exactLink).toHaveAttribute("target", "_blank");
   await expect(exactLink).toHaveAttribute("rel", "noopener noreferrer");
+
+  const searchLink = page.getByRole("link", {
+    name: "以「노랑통닭 명동점」搜尋 Google 地圖",
+  });
+  await expect(searchLink).toHaveAttribute(
+    "href",
+    "https://www.google.com/maps/search/?api=1&query=%EB%85%B8%EB%9E%91%ED%86%B5%EB%8B%AD%20%EB%AA%85%EB%8F%99%EC%A0%90",
+  );
+  await expect(searchLink).toHaveAttribute(
+    "aria-label",
+    "以「노랑통닭 명동점」搜尋 Google 地圖",
+  );
+  await expect(searchLink).toHaveText("搜尋 Google 地圖");
+  await expect(searchLink).toHaveAttribute("target", "_blank");
+  await expect(searchLink).toHaveAttribute("rel", "noopener noreferrer");
+
+  for (const link of [exactLink, searchLink]) {
+    const box = await link.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width).toBeGreaterThanOrEqual(44);
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+  }
 
   const secondDay = page.getByRole("button", { name: /09\/11/ });
   await secondDay.focus();
@@ -329,6 +409,133 @@ test("Canonical import opens a responsive source-agnostic Overview and Day", asy
     undersizedTargets: 0,
   });
   expect(consoleErrors).toEqual([]);
+});
+
+test("supporting groups are keyboard and screen-reader operable at the project viewport", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/");
+  await page.getByText("從 JSON 匯入完整行程").click();
+  await page.locator('input[accept*="application/json"]').setInputFiles({
+    name: "grouped-supporting.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(groupedSupportingTrip())),
+  });
+  const viewport = page.viewportSize();
+  expect(viewport).not.toBeNull();
+  expect(testInfo.project.name).toMatch(/^(mobile|desktop)-chromium$/);
+
+  await page.getByRole("button", { name: /第 1 天/ }).click();
+  const references = page.getByRole("complementary", { name: "參考資料" });
+  const summary = references.getByRole("button", {
+    name: "美食清單（42）",
+  });
+  await expect(summary).toHaveAttribute("aria-expanded", "false");
+  await expect(
+    references.getByRole("region", { name: "美食清單（42）" }),
+  ).toHaveCount(0);
+  await summary.focus();
+  await summary.press("Enter");
+
+  const region = references.getByRole("region", { name: "美食清單（42）" });
+  await expect(summary).toBeFocused();
+  await expect(summary).toHaveAttribute("aria-expanded", "true");
+  await expect(region).toBeVisible();
+  expect(await summary.getAttribute("aria-controls")).toBe(
+    await region.getAttribute("id"),
+  );
+  expect(await region.getAttribute("aria-labelledby")).toBe(
+    await summary.getAttribute("id"),
+  );
+  await expect(region.getByText("餐廳 1", { exact: true })).toBeVisible();
+  await expect(region.getByText("餐廳 42", { exact: true })).toBeVisible();
+
+  await page.reload();
+  await page.getByRole("button", { name: /第 1 天/ }).click();
+  await expect(
+    page.getByRole("button", { name: "美食清單（42）" }),
+  ).toHaveAttribute("aria-expanded", "false");
+});
+
+test("Seoul Result clarity scenario remains complete at the real project viewport", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/");
+  await page.getByText("從 JSON 匯入完整行程").click();
+  await page.locator('input[accept*="application/json"]').setInputFiles({
+    name: "seoul-result-clarity.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(seoulResultClarityCanonicalTrip)),
+  });
+
+  const viewport = page.viewportSize();
+  expect(viewport).not.toBeNull();
+  if (testInfo.project.name === "mobile-chromium") {
+    expect(viewport!.width).toBeLessThan(600);
+  } else {
+    expect(testInfo.project.name).toBe("desktop-chromium");
+    expect(viewport!.width).toBeGreaterThanOrEqual(1000);
+  }
+
+  await page.getByRole("button", { name: /第 1 天/ }).click();
+
+  const optionalSummary = page.getByRole("button", {
+    name: "還有體力的話",
+  });
+  const optionalDisclosure = page.getByRole("region", {
+    name: "還有體力的話",
+  });
+
+  await optionalSummary.click();
+  await expect(optionalDisclosure).toBeVisible();
+
+  const freeTime = optionalDisclosure
+    .getByRole("heading", { name: "自由活動" })
+    .locator("xpath=ancestor::article");
+  await expect(freeTime).toBeVisible();
+  await expect(freeTime).not.toContainText("彈性");
+
+  const choice = optionalDisclosure.getByRole("region", { name: "選一個" });
+  await expect(choice).toBeVisible();
+  for (const title of ["노랑통닭 명동점 (炸雞)", "no more pizza"]) {
+    const restaurant = choice
+      .getByRole("heading", { name: title })
+      .locator("xpath=ancestor::article");
+    await expect(restaurant).toBeVisible();
+    for (const stateLabel of ["可選", "暫定", "彈性"]) {
+      await expect(restaurant).not.toContainText(stateLabel);
+    }
+  }
+
+  const mainTimeline = page.getByRole("region", {
+    name: "主要行程時間線",
+  });
+  await expect(
+    mainTimeline.getByRole("heading", { name: "自由活動" }),
+  ).toHaveCount(0);
+  await expect(
+    mainTimeline.getByRole("region", { name: "選一個" }),
+  ).toHaveCount(0);
+
+  const references = page.getByRole("complementary", { name: "參考資料" });
+  await expect(references.getByText("班次：機場快線時刻表")).toBeVisible();
+  await expect(references.getByText("首爾車站的時刻表：")).toBeVisible();
+  await expect(references.getByText("已匯入的首爾交通參考")).toBeVisible();
+  await expect(
+    references.getByRole("link", { name: "查看參考資料" }),
+  ).toHaveAttribute(
+    "href",
+    "https://www.airportrailroad.com/train/express/info",
+  );
+
+  await expect(page.getByText("圖片附件未提供")).toHaveCount(0);
+  await expect(page.getByText("![image.png](image.png)")).toHaveCount(0);
+  await expect(page.getByText("![image.png](image%201.png)")).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    ),
+  ).toBe(false);
 });
 
 test("system dark mode keeps the frozen light-paper palette readable", async ({
@@ -413,10 +620,12 @@ test("nested Day relationships preserve one full member, optional separation and
     "Free evening",
   ]);
   const member = page.locator('[data-entity-id="semantic:entity:plan-a"]');
+  // Choose-one members repeat no optional/tentative/flexible label.
+  for (const text of ["可選", "暫定", "彈性"]) {
+    await expect(member).not.toContainText(text);
+  }
   for (const text of [
     "23:30–翌日 01:00",
-    "暫定",
-    "彈性",
     "待確認",
     "確認座位",
     "電子票已備妥",
@@ -554,7 +763,9 @@ test("unknown dates, ambiguous time and null-Day information remain complete wit
       exact: true,
     }),
   ).toBeVisible();
-  const undatedLink = undated.getByRole("link", { name: "開啟地圖" });
+  const undatedLink = undated.getByRole("link", {
+    name: "開啟「Undated medical visit」的地圖連結",
+  });
   await undatedLink.focus();
   await expect(undatedLink).toBeFocused();
   await expect(undatedLink).toHaveAttribute(

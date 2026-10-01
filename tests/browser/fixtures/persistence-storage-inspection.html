@@ -138,7 +138,7 @@
               credential.credential === CREDENTIAL,
             forbiddenSourceAndReviewStateAbsent: forbiddenAbsent,
             provenanceAllowlistExact:
-              storedTrip?.schema_version === "canonical-trip.v2" &&
+              storedTrip?.schema_version === "canonical-trip.v3" &&
               JSON.stringify(Object.keys(storedProvenance ?? {}).sort()) ===
                 JSON.stringify(
                   [
@@ -148,8 +148,7 @@
                     "source_id",
                   ].sort(),
                 ) &&
-              storedProvenance?.source_id ===
-                "source:persistence-inspection" &&
+              storedProvenance?.source_id === "source:persistence-inspection" &&
               storedProvenance?.locator_refs?.[0] ===
                 "source:persistence-inspection:unit:0001",
           };

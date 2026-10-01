@@ -1,6 +1,7 @@
-export const CANONICAL_TRIP_SCHEMA_VERSION = "canonical-trip.v2";
+export const CANONICAL_TRIP_SCHEMA_VERSION = "canonical-trip.v3";
 export const SUPPORTED_CANONICAL_TRIP_SCHEMA_VERSIONS = Object.freeze([
   "canonical-trip.v1",
+  "canonical-trip.v2",
   CANONICAL_TRIP_SCHEMA_VERSION,
 ]);
 
@@ -41,12 +42,7 @@ export const canonicalTripFieldAllowlist = Object.freeze({
   reservation: ["status", "reference", "detail", "todo_id"],
   ticket: ["status", "reference", "detail", "todo_id"],
   readiness: ["kind", "status", "detail", "todo_id"],
-  provenance: [
-    "origin",
-    "overridden_fields",
-    "source_id",
-    "locator_refs",
-  ],
+  provenance: ["origin", "overridden_fields", "source_id", "locator_refs"],
   relationship: [
     "id",
     "type",
@@ -55,7 +51,8 @@ export const canonicalTripFieldAllowlist = Object.freeze({
     "child_entity_ids",
     "condition",
   ],
-  supportingItem: ["id", "kind", "text", "url", "unresolved"],
+  supportingItem: ["id", "kind", "text", "url", "unresolved", "group"],
+  supportingGroup: ["id", "label", "order"],
 });
 
 export const reviewedCandidateConversionContract = Object.freeze({

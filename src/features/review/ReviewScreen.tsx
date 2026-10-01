@@ -681,6 +681,35 @@ export function ReviewScreen({
                   />
                 ))}
               </section>
+
+              {draft.supporting_items.length > 0 && (
+                <section
+                  className="space-y-4"
+                  aria-labelledby="review-supporting-items"
+                >
+                  <EditorialSectionHeading id="review-supporting-items">
+                    參考資料
+                  </EditorialSectionHeading>
+                  {draft.supporting_items.map((item) => (
+                    <article
+                      className="space-y-3 border-b border-trip-hairline py-5"
+                      key={item.id}
+                    >
+                      <SourceExcerpt
+                        items={evidence.itemsFor(item.source_refs)}
+                      />
+                      {item.group && (
+                        <Typography className="font-utility text-xs text-trip-muted">
+                          分類：{item.group.label}
+                        </Typography>
+                      )}
+                      <Typography className="font-editorial leading-7">
+                        {item.text ?? item.url ?? "未命名參考資料"}
+                      </Typography>
+                    </article>
+                  ))}
+                </section>
+              )}
             </div>
           )}
         </section>

@@ -2,6 +2,16 @@
 
 Own versioned trip schemas, deterministic validation, review-to-canonical conversion, and CanonicalTrip invariants without React or provider dependencies.
 
+`canonical-trip.v3` is the current write contract. It adds one required nullable
+`SupportingItem.group` with opaque id, source-visible label, and source order.
+Strict v1 and v2 remain read contracts; decoding v1 retains its provenance
+migration and decoding v2 adds only `group: null` before v3 validation.
+
+`deriveSupportingGroups` is the pure post-response-gate boundary. It clones a
+draft and derives groups only from a validated source document: nearest ancestor
+heading for Markdown, or one sheet identity for tabular evidence. Mixed groups
+remain null, and provider output never supplies group labels or ids.
+
 `createDayPlacement` owns deterministic primary relationship nesting and stable sequence ordering. Authoritative relationship validation consumes the same policy as Presentation Projection, so incompatible primary memberships or impossible ordering produce blocking findings before confirmation.
 
 ## Interpretation schema constraint guidance
