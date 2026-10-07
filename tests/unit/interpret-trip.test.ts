@@ -33,6 +33,44 @@ function fakeTransport(
 }
 
 describe("deep interpretation boundary", () => {
+  it("expands range coverage before returning a draft and leaves the original response untouched", async () => {
+    const value = structuredClone(validDraftInterpretationResult);
+    value.coverage.block_dispositions = [];
+    value.coverage.block_disposition_ranges = [
+      {
+        from_id: "source-block:001",
+        to_id: "source-block:001",
+        disposition: "interpreted",
+      },
+    ];
+    const before = structuredClone(value);
+    const result = await createInterpretTrip({
+      transport: fakeTransport(value),
+    })(request);
+    expect(result.coverage).toEqual(validDraftInterpretationResult.coverage);
+    expect(value).toEqual(before);
+  });
+  it("rejects invalid ranges before the draft gate with a recoverable coverage failure", async () => {
+    const value = structuredClone(validDraftInterpretationResult);
+    value.draft!.entities[0]!.day_id = "invalid:day";
+    value.coverage.block_disposition_ranges = [
+      {
+        from_id: "source-block:001",
+        to_id: "source-block:001",
+        disposition: "supporting",
+      },
+    ];
+    const onFailure = vi.fn();
+    await expect(
+      createInterpretTrip({ transport: fakeTransport(value), onFailure })(
+        request,
+      ),
+    ).rejects.toMatchObject({
+      code: "coverage_invalid",
+      findings: [{ code: "DUPLICATE_BLOCK_DISPOSITION" }],
+    });
+    expect(onFailure.mock.calls[0]![1]).toBe("response");
+  });
   it.each([
     validDraftInterpretationResult,
     validInsufficientInterpretationResult,

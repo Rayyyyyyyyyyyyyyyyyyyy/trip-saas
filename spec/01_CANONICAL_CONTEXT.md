@@ -60,8 +60,8 @@ Renderer presents it.
 The LLM is an implementation of `Semantic Interpreter`, not the whole parser.
 
 Generalized Product V0 uses one Gemini adapter. Other providers/models are a
-later optimization, not parallel MVP scope. Exact `gemini-3.8-flash` is the
-selected stable default candidate. Production remains without an accepted
+later optimization, not parallel MVP scope. Exact `gemini-3.5-flash` is the
+user-selected exact default candidate. Production remains without an accepted
 default until that exact model passes the generated-schema checks,
 deterministic parser fixtures, and live External Markdown Benchmark #001. A
 later model change reruns the same gates; production does not use a moving alias
@@ -182,6 +182,8 @@ member's supported time, place, modifiers, dependencies, notes, unresolved
 state, and exact actions.
 
 Silent omission is forbidden. An explicitly unparsed item is incomplete interpretation, not permission to invent a replacement.
+Coverage v2 may compress interpreted/supporting intervals; bounded local expansion proves exactly-once evidence accounting before Review. For spreadsheets the expectation covers the selected scope only and names excluded sheets; complete accounting includes unparsed content and is not proof of understanding. Canonical v3 carries optional source-derived supporting groups, with explicit v1/v2 decoder compatibility and no raw source persistence.
+
 ### User override precedence
 ```text
 User Override
@@ -239,7 +241,7 @@ Markdown
 → Confirmed CanonicalTrip
 → Local Overview / Day
 ```
-V0 ends at locally confirmed + renderable trip.
+V0 ends at locally confirmed + renderable trip. The approved execution order now implements the narrow Spreadsheet Travel Table slice before Hosted Delivery. This does not pass the Markdown benchmark or activate a production model; the spreadsheet supported-format declaration has its own three-layout live gate. Current execution details are in [the spreadsheet change handoff](../openspec/changes/add-spreadsheet-intake-and-result-clarity/handoff.md), alongside the Markdown owner above.
 ### V0.1 — Hosted Delivery Lite
 Only after V0 benchmark gate:
 ```text
@@ -258,19 +260,24 @@ publication has an isolated unlisted slug, immutable snapshot, bounded
 lifecycle, and separate recovery verifier; hosted viewers do not require an
 account.
 ### V0.2 — Narrow Spreadsheet Travel Table
-Constrained XLSX/XLS/CSV Source Adapter using the same
+Constrained XLSX/CSV Source Adapter using the same
 Draft/Review/Canonical pipeline.
 The adapter extracts cell values and relevant row/column/merge relationships;
 an explicitly configured LLM provider interprets the resulting
 `UnifiedSourceDocument`.
 
 Initial evidence boundary:
-- `.xlsx`, `.xls`, and `.csv`
+- experimental `.xlsx` and UTF-8 `.csv`; `.xls` remains rejected until a real sample passes the same extraction gate
 - at most 19 visible workbook sheets, matching Sample #19
 - hidden sheets ignored
 - formula cells use their calculated/cached displayed value for interpretation;
   the formula remains source metadata when available
-- CSV is treated as one visible sheet
+- CSV is treated as one visible sheet without a selection step
+- choose at least one visible sheet in original order before interpretation; hidden sheets never enter extraction or coverage
+- displayed text is authoritative; cached serials and date-system hints cannot supply a year absent from cited display text
+- 128 MiB file, 50,000 evidence-unit and 20 MB source-document technical limits fail explicitly without truncation
+- whole-sheet requests preflight completely and reconcile globally before Review; a single over-budget sheet fails without a provider call until region chunking is justified
+- declare spreadsheet support only after Busan, 澎湖 and 名古屋 pass the faithful live rubric independently; successful extraction or a mock response cannot satisfy that gate
 ### Later
 Evidence-driven:
 - advanced spreadsheets
@@ -328,7 +335,7 @@ Implementation acceptance still requires clean-start validation of:
 - implementation fidelity to the frozen prototype color/font-family tokens
 
 The prototype is not a product-scope authority. It does not enable PDF or
-Spreadsheet intake early, change browser-local Gemini credential persistence,
+Spreadsheet support by itself; the experimental slice is authorized by its implementation change. It cannot change browser-local Gemini credential persistence,
 add a local semantic-parser fallback, remove Canonical JSON import, remove the
 gated Hosted Delivery roadmap, or generalize Today into V0.
 
@@ -360,7 +367,7 @@ its verification gates.
 - Review trust layer
 - executable source-document gate and source-neutral evidence ownership
 - one application candidate-workflow owner and bounded processing-modal contract
-- exact `gemini-3.8-flash` as the benchmark-gated default candidate
+- exact `gemini-3.5-flash` as the benchmark-gated default candidate
 - unique primary Result placement and complete relationship-member presentation
 - Markdown V0 evidence boundary
 - Overview/Day surface scope and semantic direction
@@ -390,14 +397,14 @@ Local unit, component and mobile/desktop browser evidence is recorded in
 This verifies the working implementation, not deployment or live parser quality.
 
 ### Remaining external acceptance gate
-- production-default activation for exact `gemini-3.8-flash`; activation remains blocked until the generated-schema, deterministic parser, and key-backed live External Markdown Benchmark #001 gates pass
+- production-default activation for exact `gemini-3.5-flash`; activation remains blocked until the generated-schema, deterministic parser, and key-backed live External Markdown Benchmark #001 gates pass
 
 ### Available reference implementation
 - current Osaka/Uji/Toei Kyoto Studio Park (太秦) viewer
 - runtime-oriented prototype behavior
 ### Unvalidated
 - generic parser quality
-- live `gemini-3.8-flash` parser/model acceptance and production-default activation
+- live `gemini-3.5-flash` parser/model acceptance and production-default activation
 - human Review burden (captured-output correction evidence is local and controlled)
 - qualifying original unfamiliar-Markdown E2E acceptance
 - current clean-start Overview/Day implementation and usability

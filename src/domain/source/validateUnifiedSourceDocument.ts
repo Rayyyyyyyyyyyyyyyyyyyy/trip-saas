@@ -1,4 +1,9 @@
 import { validateUnifiedSourceDocumentSchema } from "./schemaValidators";
+import {
+  MAX_SOURCE_DOCUMENT_BYTES,
+  MAX_SOURCE_EVIDENCE_UNITS,
+} from "./sourceDocumentLimits";
+import { tabularEvidenceIsValid } from "./validateTabularEvidence";
 import type {
   SourceEvidenceUnit,
   UnifiedSourceDocument,
@@ -18,6 +23,8 @@ export type SourceDocumentFailureCode =
   | "duplicate_evidence_id"
   | "invalid_source_order"
   | "invalid_reference"
+  | "invalid_tabular_evidence"
+  | "source_size_exceeded"
   | "hierarchy_cycle";
 
 export type SourceDocumentFailure = {
@@ -31,6 +38,8 @@ export type SourceDocumentValidationResult =
 
 export type SourceDocumentExpectation = {
   source_id: string;
+  maxEvidenceUnits?: number;
+  maxDocumentBytes?: number;
 };
 
 const failure = (
@@ -168,6 +177,26 @@ export function validateUnifiedSourceDocument(
   }
 
   const document = value as UnifiedSourceDocument;
+  const maxUnits = expected.maxEvidenceUnits ?? MAX_SOURCE_EVIDENCE_UNITS;
+  const maxBytes = expected.maxDocumentBytes ?? MAX_SOURCE_DOCUMENT_BYTES;
+  if (
+    !Number.isFinite(maxUnits) ||
+    maxUnits < 1 ||
+    !Number.isFinite(maxBytes) ||
+    maxBytes < 1 ||
+    document.evidence_units.length > maxUnits ||
+    new TextEncoder().encode(JSON.stringify(document)).byteLength > maxBytes
+  ) {
+    return {
+      valid: false,
+      failures: [
+        failure(
+          "source_size_exceeded",
+          "Source document exceeds the configured evidence/byte limit.",
+        ),
+      ],
+    };
+  }
   const unitsById = new Map(
     document.evidence_units.map((unit) => [unit.id, unit]),
   );
@@ -185,6 +214,24 @@ export function validateUnifiedSourceDocument(
   failures.push(...checkSourceOrder(document.evidence_units));
   failures.push(...checkReferences(document, unitsById));
   failures.push(...checkHierarchy(document.evidence_units, unitsById));
+  const formatMatchesEvidence = document.evidence_units.every((unit) =>
+    unit.structural_evidence.every((evidence) =>
+      document.source_format === "tabular"
+        ? evidence.evidence_kind === "tabular_region"
+        : evidence.evidence_kind === "markdown_block",
+    ),
+  );
+  if (
+    !formatMatchesEvidence ||
+    (document.source_format === "tabular" && !tabularEvidenceIsValid(document))
+  ) {
+    failures.push(
+      failure(
+        "invalid_tabular_evidence",
+        "Source format or tabular sheet, coordinate, merge or header structure is inconsistent.",
+      ),
+    );
+  }
 
   if (failures.length > 0) {
     return { valid: false, failures };

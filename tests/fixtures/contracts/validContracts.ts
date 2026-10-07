@@ -82,7 +82,7 @@ export const validParsedTripDraft: ParsedTripDraft = {
 };
 
 export const validDraftInterpretationResult: SemanticInterpretationResult = {
-  schema_version: "semantic-interpretation-result.v1",
+  schema_version: "semantic-interpretation-result.v2",
   source_schema_version: "unified-source-document.v1",
   source_id: "source:fixture-001",
   status: "draft",
@@ -99,7 +99,7 @@ export const validDraftInterpretationResult: SemanticInterpretationResult = {
 
 export const validInsufficientInterpretationResult: SemanticInterpretationResult =
   {
-    schema_version: "semantic-interpretation-result.v1",
+    schema_version: "semantic-interpretation-result.v2",
     source_schema_version: "unified-source-document.v1",
     source_id: "source:fixture-001",
     status: "insufficient",

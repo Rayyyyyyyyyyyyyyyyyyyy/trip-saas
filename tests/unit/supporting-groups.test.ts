@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 import type { UnifiedSourceDocument } from "../../src/domain/source/types";
 import { validateUnifiedSourceDocument } from "../../src/domain/source/validateUnifiedSourceDocument";
 import { deriveSupportingGroups } from "../../src/domain/trip/deriveSupportingGroups";
+import {
+  buildCanonicalTrip,
+  validateCanonicalTripAuthoritatively,
+} from "../../src/domain/trip/buildCanonicalTrip";
+import { decodeCanonicalTrip } from "../../src/domain/trip/decodeCanonicalTrip";
 import { extractMarkdownSource } from "../../src/features/import/markdownSourceAdapter";
 import { validParsedTripDraft } from "../fixtures/contracts/validContracts";
 
@@ -26,6 +31,37 @@ function supportingItem(id: string, sourceRefs: string[]) {
 }
 
 describe("deterministic supporting group derivation", () => {
+  it("preserves a valid long Markdown heading through confirmation and decoding", () => {
+    const label = "行程參考".repeat(100);
+    const document = validated(
+      extractMarkdownSource({
+        schema_version: "text-source-input.v1",
+        source_id: "source:long-heading",
+        input_mode: "pasted_markdown",
+        media_type: "text/markdown",
+        display_name: "Long heading",
+        content: `# ${label}\n\nSupporting directions`,
+      }),
+    );
+    const directions = document.evidence_units.find(
+      (unit) => unit.display_value === "Supporting directions",
+    )!;
+    const draft = structuredClone(validParsedTripDraft);
+    draft.supporting_items = [
+      supportingItem("support:directions", [directions.id]),
+    ];
+
+    const canonical = buildCanonicalTrip(
+      deriveSupportingGroups(draft, document),
+    );
+
+    expect(validateCanonicalTripAuthoritatively(canonical).valid).toBe(true);
+    expect(decodeCanonicalTrip(canonical)).toMatchObject({
+      valid: true,
+      trip: { supporting_items: [{ group: { label } }] },
+    });
+  });
+
   it("uses the nearest Markdown ancestor heading and leaves mixed or heading-less references ungrouped", () => {
     const document = validated(
       extractMarkdownSource({
@@ -89,7 +125,7 @@ describe("deterministic supporting group derivation", () => {
           id: "cell:food:a1",
           source_order: 0,
           parent_ref: null,
-          locator: "Food!A1",
+          locator: "sheet:美食清單!A1",
           raw_value: "Pizza",
           display_value: "Pizza",
           links: [],
@@ -112,7 +148,7 @@ describe("deterministic supporting group derivation", () => {
           id: "cell:packing:a1",
           source_order: 1,
           parent_ref: null,
-          locator: "Packing!A1",
+          locator: "sheet:行李清單!A1",
           raw_value: "Umbrella",
           display_value: "Umbrella",
           links: [],

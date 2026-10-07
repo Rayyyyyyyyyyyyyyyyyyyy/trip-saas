@@ -13,7 +13,7 @@ Trip Runtime 不是 AI 行程規劃器。它保留來源意圖，讓程式抽取
 - Home 已提供 Markdown 檔案／貼上文字、瀏覽器本機 Gemini key 控制、Canonical JSON import、資料清除與明確 Golden sample action。
 - Source Adapter、provider-neutral Gemini adapter、schemas、deterministic validators、IndexedDB persistence、workflow reducer 與 Golden compatibility tests 已存在。
 - Evidence-first Review、transactional confirmation、generalized Overview／Day、light-only newspaper tokens 與部分 mobile/desktop browser coverage 已具備；完整產品驗收尚未通過。
-- 已執行 exact `gemini-3.5-flash` 的歷史與 2026/09/08 live 比較：歷史 low 未通過本機 gate、medium/high 可進 Review但有忠實度缺失；最新 low 仍未通過 Review gate，medium timeout，high 回傳 503。依 2026/09/08 官方模型研究，exact stable `gemini-3.8-flash` 已取代它成為下一個驗收候選；Production default 與最終 benchmark acceptance 仍未通過。
+- 已執行 exact `gemini-3.5-flash` 的歷史與 2026/09/08 live 比較：歷史 low 未通過本機 gate、medium/high 可進 Review但有忠實度缺失；最新 low 仍未通過 Review gate，medium timeout，high 回傳 503。2026/10/07 使用者決定維持 exact `gemini-3.5-flash`；上述失敗紀錄保留，新版 response-v2 的 live 驗收尚未執行，Production default 與最終 benchmark acceptance 仍未通過。
 - `complete-faithful-markdown-journey` 已在本機修正並驗證未知日期確認、未分 Day 資料呈現、Canonical 日期／時間驗證、最小來源追溯與實際入口 CSP。live benchmark、正式模型啟用、hosted header 與旅行中效用仍是獨立未通過的 gate；三個舊 change 的分數只代表歷史 checkout。
 - Golden Viewer 的靜態發布目標是 Netlify；Hosted Delivery Lite 的 Functions／Blob 發布能力仍須等 benchmark gate 通過後才能實作。
 
@@ -33,7 +33,7 @@ npm run dev
 ```
 
 本機 development 目前透過 ignored `.env.development.local` 明確啟用
-`gemini-3.8-flash` 候選；這不會替 Netlify production 設定模型。
+`gemini-3.5-flash` 候選；這不會替 Netlify production 設定模型。
 
 主要驗證：
 

@@ -3,6 +3,8 @@ import { useTripIntakeWorkflow } from "../../app/useTripIntakeWorkflow";
 import {
   Button,
   CircularProgress,
+  Checkbox,
+  FormControlLabel,
   Dialog,
   LinearProgress,
   Tab,
@@ -118,7 +120,7 @@ function MarkdownSourceSelector({
   return (
     <div>
       <input
-        accept=".md,.markdown,text/markdown,text/plain"
+        accept=".md,.markdown,.xlsx,.csv,text/markdown,text/plain,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         hidden
         onChange={(event) => intake.selectFile(event.target.files?.[0] ?? null)}
         ref={markdownInputRef}
@@ -191,6 +193,53 @@ function MarkdownSourceSelector({
       <Typography className="mt-2 font-utility text-xs text-trip-muted">
         支援 .md 或 .markdown，單一檔案最多 1 MB
       </Typography>
+      {intake.isSpreadsheet &&
+        intake.spreadsheet &&
+        intake.spreadsheet.format !== "csv" &&
+        intake.spreadsheet.visibleSheets.length > 1 && (
+          <section
+            aria-label="選擇要判讀的分頁"
+            className="mt-5 border-y border-trip-hairline py-4"
+          >
+            <Typography
+              component="h3"
+              className="font-editorial text-lg font-bold"
+            >
+              選擇要判讀的分頁
+            </Typography>
+            <Typography className="mt-1 font-utility text-xs leading-6 text-trip-muted">
+              預設選取所有可見分頁，至少保留一頁。取消的分頁不會送出判讀；隱藏分頁不會匯入。
+            </Typography>
+            <Typography className="mt-1 font-utility text-xs leading-6 text-trip-muted">
+              試算表匯入仍在驗收中。內嵌圖片不會匯入；目前只讀取儲存格顯示內容。
+            </Typography>
+            <div className="mt-2 grid min-w-0">
+              {intake.spreadsheet.visibleSheets.map((sheet) => (
+                <FormControlLabel
+                  key={sheet.id}
+                  className="m-0 min-h-11 min-w-0 [&_.MuiFormControlLabel-label]:min-w-0 [&_.MuiFormControlLabel-label]:break-all"
+                  control={
+                    <Checkbox
+                      checked={intake.selectedSheetIds.includes(sheet.id)}
+                      onChange={(_, checked) =>
+                        intake.selectSheet(sheet.id, checked)
+                      }
+                    />
+                  }
+                  label={sheet.name}
+                />
+              ))}
+            </div>
+            {intake.selectedSheetIds.length === 0 && (
+              <Typography
+                role="alert"
+                className="mt-2 font-utility text-sm text-trip-attention"
+              >
+                至少選擇一個分頁才能判讀。
+              </Typography>
+            )}
+          </section>
+        )}
     </div>
   );
 }
@@ -338,7 +387,7 @@ function MarkdownIntakeFailureNotice({
         {failure.recoverable && (
           <Button
             className="min-h-11 px-0 underline"
-            disabled={!intake.canStart}
+            disabled={!intake.canRetry}
             onClick={() => void intake.processSource()}
           >
             重新送出這份行程
@@ -501,7 +550,7 @@ export function MarkdownIntakePanel({
           {intake.interprets
             ? "開始後，這份行程內容會送到 Gemini 判讀。"
             : "這一步只會在瀏覽器中整理內容，還不會送到 Gemini。"}
-          原始 Markdown 與校對資料只保留到這次匯入結束，不會寫進正式行程。
+          原始檔案與校對資料只保留到這次匯入結束，不會寫進正式行程。
         </EditorialMarker>
 
         <MarkdownIntakeProgress intake={intake} />

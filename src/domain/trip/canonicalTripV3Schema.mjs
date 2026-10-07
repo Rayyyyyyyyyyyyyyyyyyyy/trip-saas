@@ -27,7 +27,9 @@ export function createCanonicalTripV3Schema(canonicalTripV2) {
           label: {
             type: "string",
             minLength: 1,
-            maxLength: 256,
+            // Markdown headings use the source evidence display-value limit.
+            // A valid read-only derived label must remain confirmable verbatim.
+            maxLength: 200000,
             pattern: "\\S",
           },
           order: { type: "integer", minimum: 0 },

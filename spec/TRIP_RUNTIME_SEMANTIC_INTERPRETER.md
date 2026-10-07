@@ -73,6 +73,28 @@ Renderer presents.
 
    Source syntax is evidence, not semantic truth.
 
+   For tabular sources, recognize row-per-event, calendar-grid, and
+   column-per-day layouts from the displayed cells and their row/column/merge
+   relationships. Evidence order is extraction order, not a sequence of Day
+   sections: do not assign an event to a Day merely because its cell follows a
+   particular header in the evidence-unit array. Use the actual table layout.
+   Reference sheets (such as food lists, maps, and instructions) are supporting
+   content, not automatically itinerary events. Preserve parent activities and
+   their internal venue schedules rather than flattening every cell into an event.
+
+   `display_value` is the text visible to the traveler. `typed_hint`, raw values,
+   formula text, and cached metadata are auxiliary evidence; they cannot supply
+   a year omitted from the displayed date. Keep full dates null and retain the
+   source's partial date expression when the cited visible text lacks a year.
+   Never borrow a year from unrelated cells, file names, or sheet names. Preserve
+   cell hyperlink targets exactly when they satisfy the URL contract.
+
+   An extraction finding `COVERED_CELL_CONTENT` marks independent content hidden
+   inside a merged region. Preserve and account for that evidence and surface
+   the warning; its stored text is not a visible fact and cannot establish a
+   confirmed date or year. Missing/error formula caches also remain explicit
+   extraction warnings; never execute a formula or invent its result.
+
 5. **Surface uncertainty**
    When evidence is insufficient:
    - preserve raw value
@@ -98,6 +120,19 @@ Renderer presents.
    - user-readable message
 
    Never silently omit an evidence unit.
+
+   With `semantic-interpretation-result.v2`, individual entries remain in
+   `coverage.block_dispositions`. To compress a contiguous region sharing one
+   disposition, use optional `coverage.block_disposition_ranges` entries:
+   `{ from_id, to_id, disposition }`. Endpoints are inclusive evidence-unit IDs
+   in the validated document's source order, not numeric or lexical ID order.
+   A singleton range is valid. Ranges may use only `interpreted` or `supporting`.
+   Keep `unparsed` per-unit, with its own explicit reason in `unparsed_items`.
+   Use ranges for homogeneous reference regions; never span mixed dispositions.
+   Every expected evidence unit must occur exactly once across both arrays:
+   no gaps, overlaps, unknown endpoints, or reversed ranges. `total_blocks` is
+   the number of evidence units, not the number of emitted entries or ranges.
+   The browser expands ranges before the existing response and draft gates.
 
 7. **Stay in your layer**
    Do not:
@@ -162,13 +197,16 @@ format validity does not prove source support.
 ## Required response gate
 
 Every response must conform to the provider-neutral required schema and include:
-- `schema_version`
+
+- `schema_version = semantic-interpretation-result.v2`
 - matching `source_id`
 - `status`
 - `draft` or explicit `null`
 - structured `findings`
-- `coverage` with `total_blocks`, one `block_dispositions` entry per evidence unit,
-  and explicit `coverage.unparsed_items`, including an empty list when none exist
+- `coverage` with `total_blocks`, required `block_dispositions` (empty when all
+  units use ranges), optional `block_disposition_ranges`, and explicit
+  `coverage.unparsed_items`, including an empty list when none exist. Individual
+  entries and expanded ranges together account for every evidence unit once.
 
 Required draft fields remain explicit when their supported value is `null`, `none`, `unknown`, or an empty list. Do not treat a source-provided lack of time as an error; encode it as time precision `none`. Do not omit a required member or invent a value to satisfy the schema.
 

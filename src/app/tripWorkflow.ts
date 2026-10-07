@@ -8,6 +8,14 @@ import type {
 import type { ValidatedUnifiedSourceDocument } from "../domain/source/types";
 import type { ReviewAdjustment } from "../features/review/reviewAdjustment";
 
+// Intake metadata stays in the application session; spreadsheet sources are
+// not fabricated Markdown inputs and no source content reaches persistence.
+export type IntakeSourceInput = TextSourceInput | {
+  source_id: string;
+  display_name: string;
+  input_mode: "spreadsheet_file" | "csv_file";
+};
+
 export type TripWorkflowStatus =
   | "idle"
   | "reading"
@@ -50,7 +58,7 @@ export type TripCandidateSession = {
   interpretation: SemanticInterpretationResult | null;
   requestId: string | null;
   sessionId: string;
-  source: TextSourceInput | null;
+  source: IntakeSourceInput | null;
 };
 
 export type TripWorkflowState = {
@@ -66,7 +74,7 @@ export type TripWorkflowEvent =
   | {
       type: "intake_started";
       sessionId: string;
-      source: TextSourceInput | null;
+      source: IntakeSourceInput | null;
     }
   | {
       type: "processing_stage";
@@ -79,7 +87,7 @@ export type TripWorkflowEvent =
         | "parsing"
         | "validating_draft";
     }
-  | { type: "source_read"; sessionId: string; source: TextSourceInput }
+  | { type: "source_read"; sessionId: string; source: IntakeSourceInput }
   | { type: "source_prepared"; sessionId: string }
   | { type: "source_validated"; sessionId: string }
   | {
@@ -203,7 +211,7 @@ export function tripWorkflowReducer(
         : state;
 
     case "source_read":
-      return hasCurrentSession(state, event) && state.status === "reading"
+      return hasCurrentSession(state, event) && isProcessing(state)
         ? { ...state, candidate: { ...state.candidate!, source: event.source } }
         : state;
 

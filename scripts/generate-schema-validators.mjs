@@ -18,7 +18,7 @@ const parsedTripDraft = readSchema(
   "src/domain/trip/schemas/parsed-trip-draft.v1.schema.json",
 );
 const semanticInterpretationResult = readSchema(
-  "src/domain/trip/schemas/semantic-interpretation-result.v1.schema.json",
+  "src/domain/trip/schemas/semantic-interpretation-result.v2.schema.json",
 );
 const canonicalTripV1 = readSchema(
   "src/domain/trip/schemas/canonical-trip.v1.schema.json",

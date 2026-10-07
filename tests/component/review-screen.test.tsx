@@ -88,6 +88,33 @@ function Harness({
 }
 
 describe("ReviewScreen", () => {
+  it("explains missing-year adjustments without asking for compulsory completion", () => {
+    const draft = structuredClone(validParsedTripDraft);
+    draft.days[0]!.date = null;
+    draft.days[0]!.label = "8/16";
+    render(
+      <Harness
+        initialDraft={draft}
+        adjustments={[
+          {
+            id: "adjustment:unsupported-year:test",
+            kind: "unsupported_date_year_downgrade",
+            finding_id: "finding:local-fidelity:missing_year:test",
+            target: { kind: "day", day_id: draft.days[0]!.id, field: "date" },
+            source_refs: ["source-block:001"],
+            before: "2025-08-16",
+            after: null,
+            partial_text: "8/16",
+          },
+        ]}
+      />,
+    );
+    expect(
+      screen.getByText("已保留原文，未採用沒有來源支持的年份"),
+    ).toBeVisible();
+    expect(screen.getByText(/未指定完整日期，保留「8\/16」/)).toBeVisible();
+    expect(screen.getByText("沒有需要你決定的問題")).toBeVisible();
+  });
   it("starts as an exception-led checkpoint and opens complete editors through an accessible disclosure", async () => {
     const user = userEvent.setup();
     const adjustedDraft = structuredClone(validParsedTripDraft);
@@ -347,9 +374,15 @@ describe("ReviewScreen", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "查看完整校對內容" }));
 
-    expect(screen.getByText("Relative image is missing.")).toBeVisible();
+    expect(screen.queryByText("Relative image is missing.")).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "來源有 1 個圖片參照未匯入，查看明細",
+      }),
+    );
+    expect(screen.getByText("./missing.png")).toBeVisible();
     expect(screen.getByText("This note remains ambiguous.")).toBeVisible();
-    expect(screen.getAllByText("需要留意").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("需要留意").length).toBeGreaterThan(0);
     expect(screen.getByText("保留的參考連結")).toBeVisible();
     expect(
       screen.getByText(

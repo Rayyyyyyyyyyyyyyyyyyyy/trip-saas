@@ -15,7 +15,7 @@ late-result rejection, non-overlapping Result placement, explicit sample routing
 and Review-before-confirmation replacement safety. See the active change's
 [`validation.md`](../openspec/changes/archive/2026-09-07-harden-source-to-render-boundaries/validation.md)
 for the observed test boundaries. This is not a deployment claim. Live
-`gemini-3.8-flash` acceptance and production-default activation remain gated.
+`gemini-3.5-flash` acceptance and production-default activation remain gated.
 > Scope: Observable behavior for Generalized Product V0.
 > Visual styling belongs to `06_RESULT_UI_SPEC.md`.
 
@@ -253,10 +253,10 @@ Credential rules:
 - confirmed trip readable without parser credentials
 - spreadsheet semantic interpretation cannot start without a valid Gemini key
 
-Exact `gemini-3.8-flash` is the selected stable default candidate. Production
+Exact `gemini-3.5-flash` is the user-selected exact default candidate. Production
 must remain without an accepted default until that exact model passes the
 generated-schema checks, deterministic parser fixtures, and live External
-Markdown Benchmark #001. After acceptance, use the exact stable ID rather than
+Markdown Benchmark #001. After acceptance, use the exact selected ID rather than
 a moving alias. Model changes rerun the same gates, and the application must not
 silently fall back to another model.
 
@@ -550,7 +550,7 @@ V0 is functionally complete when:
 - every validated evidence unit is accounted for and every unparsed item is explicitly listed with locator + reason
 - invalid/unvalidated source documents never invoke the provider
 - blocking processing always has an application deadline and explicit stop path; every terminal outcome closes the modal and clears timers
-- exact `gemini-3.8-flash` remains benchmark-gated until live acceptance and no alternate model is selected silently
+- exact `gemini-3.5-flash` remains benchmark-gated until live acceptance and no alternate model is selected silently
 - structurally insufficient input receives a bounded recovery response instead of an invented draft
 - material ambiguity is visible
 - parser mistakes can be corrected through the full required action set on mobile and desktop

@@ -191,6 +191,12 @@ Preserve:
 
 When provenance is intentionally exposed, `你的校正` is an allowed supporting label for a user override. It identifies authority/provenance and must not become itinerary intent.
 
+### Projected map and state labels
+
+The projection resolves the exact source map URL first. With only a verbatim place expression, it may offer a clearly labeled `搜尋 Google 地圖` action derived solely from that text; without a place there is no action. Existing authoritative Golden URLs remain unchanged. Map actions have at least a 44×44px target, safe new-tab attributes and an accessible name containing the visible label.
+
+Place text is omitted when the whitespace-normalized title already contains it. Choose-one members do not repeat optional/tentative labels; standalone entries show at most one state label, tentative before optional. Flexible intent stays in semantics and layout, without another status chip.
+
 ## 8. Overview contract
 
 Purpose:
@@ -368,6 +374,8 @@ Examples:
   Default:
   secondary/nested access, not top-level event promotion.
 
+Confirmed supporting groups render once as default-collapsed accessible disclosures, titled `<label>（<count>）`, ordered by confirmed group/source order. Ungrouped material remains reachable. Group disclosure state is local UI state. Unresolved image references remain accounted for but do not produce empty Result frames or repeated missing-image notices; Review exposes recorded missing references once.
+
 Source locator/provenance may appear as low-priority supporting context. The Result renderer still consumes only Presentation Projection and never raw source evidence.
 
 ## 16. Today runtime boundary
@@ -530,7 +538,7 @@ hosted delivery.
 
 In particular, prototype screens must not be used to:
 
-- enable PDF or Spreadsheet intake before their owning roadmap gates
+- enable PDF input or declare spreadsheet support before its owning acceptance gate; the approved experimental spreadsheet intake has separate live acceptance
 - replace the approved browser-local Gemini credential persistence policy with
   session-only storage
 - add a local semantic-parser fallback that bypasses the approved Gemini path

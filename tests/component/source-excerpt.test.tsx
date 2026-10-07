@@ -75,8 +75,10 @@ describe("Review source evidence", () => {
     ).toHaveLength(1);
   });
 
-  it("names an image asset alongside the text it came from", () => {
-    const evidence = projectionFor(validMarkdownSourceDocument);
+  it("names an image asset alongside the text when it was not recorded as unimported", () => {
+    const source = structuredClone(validMarkdownSourceDocument);
+    source.extraction_findings = [];
+    const evidence = projectionFor(source);
     render(
       <SourceExcerpt
         items={evidence.itemsFor(["source:fixture-001:unit:0003"])}
@@ -107,17 +109,25 @@ describe("Review source evidence", () => {
     const items = evidence.itemsFor(["source:fixture-002:unit:0002"]);
     render(<SourceExcerpt items={items} />);
 
-    expect(screen.getByText(/原文 · Day1 · sheet:Day1!A2:B2/)).toBeVisible();
+    expect(screen.getByText("原文 · Day1")).toBeVisible();
+    expect(screen.getByText("sheet:Day1!A2:B2")).toBeVisible();
     expect(screen.getByText("18:30~")).toBeVisible();
     expect(screen.getByText("時間")).toBeVisible();
-    // The projection is the whole contract: no merge, formula, or hyperlink
-    // structure reaches the component.
+    // The projection is the whole contract: position bounds reach the grid;
+    // formula, typed hints and adapter-private merge objects do not.
     expect(items).toEqual([
       {
         kind: "tabular_excerpt",
         source_ref: "source:fixture-002:unit:0001",
         locator_label: "sheet:Day1!A1",
         sheet_name: "Day1",
+        sheet_id: "sheet:Day1",
+        row_start: 1,
+        row_end: 1,
+        column_start: 1,
+        column_end: 1,
+        fragment_index: 0,
+        fragment_count: 1,
         text: "時間",
         truncated: false,
       },
@@ -126,6 +136,13 @@ describe("Review source evidence", () => {
         source_ref: "source:fixture-002:unit:0002",
         locator_label: "sheet:Day1!A2:B2",
         sheet_name: "Day1",
+        sheet_id: "sheet:Day1",
+        row_start: 2,
+        row_end: 2,
+        column_start: 1,
+        column_end: 2,
+        fragment_index: 0,
+        fragment_count: 1,
         text: "18:30~",
         truncated: false,
       },

@@ -16,7 +16,7 @@ The default is `external-markdown-001-live-comparison.json` in Node's OS tempora
 directory. The live test atomically saves mode-0600 checkpoints before calling
 `assertLiveBenchmarkExecution`, including failed and incomplete comparisons.
 
-The exact candidate is `gemini-3.8-flash`. Low, medium, and high run in order with
+The exact candidate is `gemini-3.5-flash`. Low, medium, and high run in order with
 no additional benchmark retries. A level-specific parser/validation error keeps
 its allowlisted failure code, phase, safe HTTP status, and bounded safe diagnostics;
 remaining comparisons continue. Authentication failure, source/preflight setup
@@ -25,6 +25,12 @@ Earlier outcomes remain and unattempted levels are explicitly `not_run`.
 Missing credentials or an invalid fixture mapping produce a setup failure artifact.
 An unwritable output path remains a filesystem failure; the runner does not bypass
 that path or silently claim it saved evidence.
+
+New runs use `semantic-interpretation-result.v2`. The parser expands range
+coverage into individual evidence-unit dispositions before scoring; range
+failures retain the `coverage_invalid` response-validation outcome. Historical
+v1 captures remain unchanged and must not be relabeled as new-model or v2 live
+evidence. Deterministic range tests do not satisfy the live acceptance gate.
 
 The live test allows up to 1,120 seconds before abort, with a 1,140-second outer
 test timeout to save terminal outcomes. This accommodates all three levels and

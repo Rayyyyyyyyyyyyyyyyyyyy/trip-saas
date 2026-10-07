@@ -23,7 +23,7 @@ describe("Gemini structured transport", () => {
       {},
     );
     const [url, init] = fetch.mock.calls[0];
-    expect(String(url)).toContain("gemini-3.8-flash:generateContent");
+    expect(String(url)).toContain("gemini-3.5-flash:generateContent");
     expect(String(url) + init?.body).not.toContain("private-key");
     expect(init?.headers).toMatchObject({ "x-goog-api-key": "private-key" });
     expect(prepared.requestBytes).toBe(
@@ -69,7 +69,7 @@ describe("Gemini structured transport", () => {
       transport.prepare("source").send({ credential: "key" }),
     ).rejects.toMatchObject({ code: "provider_rejected" });
     expect(fetch).toHaveBeenCalledOnce();
-    expect(String(fetch.mock.calls[0]?.[0])).toContain("gemini-3.8-flash");
+    expect(String(fetch.mock.calls[0]?.[0])).toContain("gemini-3.5-flash");
   });
 
   it("cleans retry waiting listeners and timers after success", async () => {
@@ -93,6 +93,10 @@ describe("Gemini structured transport", () => {
         .send({ credential: "key", signal: controller.signal });
       await vi.advanceTimersByTimeAsync(100);
       await expect(pending).resolves.toEqual({});
+      expect(fetch.mock.calls.map(([url]) => String(url))).toEqual([
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
+      ]);
       expect(vi.getTimerCount()).toBe(0);
       expect(
         remove.mock.calls.filter(([event]) => event === "abort").length,

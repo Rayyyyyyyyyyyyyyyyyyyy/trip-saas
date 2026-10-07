@@ -1,4 +1,5 @@
 import { validateSemanticInterpretationResultSchema } from "./schemaValidators";
+import { expandSourceCoverage } from "../source/sourceCoverage";
 import type {
   SemanticInterpretationResult,
   SourceExpectation,
@@ -26,6 +27,14 @@ export function validateInterpretationResponse(
   }
 
   const findings: TripFinding[] = [];
+  const expanded = expandSourceCoverage(
+    result.coverage,
+    expectedSource.block_ids,
+  );
+  if (!expanded.valid) {
+    return { valid: false, findings: expanded.findings, schemaErrors: [] };
+  }
+  const coverage = expanded.coverage;
   if (result.source_id !== expectedSource.source_id) {
     findings.push(
       finding("SOURCE_ID_MISMATCH", "Response source identity does not match."),
@@ -42,7 +51,7 @@ export function validateInterpretationResponse(
 
   const expectedBlockIds = new Set(expectedSource.block_ids);
   const dispositionCounts = new Map<string, number>();
-  for (const disposition of result.coverage.block_dispositions) {
+  for (const disposition of coverage.block_dispositions) {
     dispositionCounts.set(
       disposition.source_ref,
       (dispositionCounts.get(disposition.source_ref) ?? 0) + 1,
@@ -77,8 +86,8 @@ export function validateInterpretationResponse(
   }
 
   if (
-    result.coverage.total_blocks !== expectedBlockIds.size ||
-    result.coverage.total_blocks !== dispositionCounts.size
+    coverage.total_blocks !== expectedBlockIds.size ||
+    coverage.total_blocks !== dispositionCounts.size
   ) {
     findings.push(
       finding(
@@ -89,12 +98,12 @@ export function validateInterpretationResponse(
   }
 
   const unparsedDispositionIds = new Set(
-    result.coverage.block_dispositions
+    coverage.block_dispositions
       .filter((item) => item.disposition === "unparsed")
       .map((item) => item.source_ref),
   );
   const unparsedItemCounts = new Map<string, number>();
-  for (const item of result.coverage.unparsed_items) {
+  for (const item of coverage.unparsed_items) {
     unparsedItemCounts.set(
       item.source_ref,
       (unparsedItemCounts.get(item.source_ref) ?? 0) + 1,

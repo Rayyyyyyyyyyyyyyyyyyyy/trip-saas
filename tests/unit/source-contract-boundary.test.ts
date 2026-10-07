@@ -102,9 +102,7 @@ describe("Source contract architecture boundary", () => {
     expect(violations).toEqual([]);
   });
 
-  it("keeps the tabular seam bounded before spreadsheet intake", () => {
-    // The variant validates and Group 2 may read its source-neutral sheet
-    // evidence, while no adapter or intake surface constructs or accepts one.
+  it("keeps tabular extraction inside its adapter and source domain", () => {
     expect(
       validateUnifiedSourceDocumentSchema(validTabularSourceDocument),
     ).toEqual({ valid: true, errors: [] });
@@ -118,10 +116,20 @@ describe("Source contract architecture boundary", () => {
       .filter(
         (file) =>
           !file.startsWith("domain/source/") &&
-          file !== "domain/trip/deriveSupportingGroups.ts",
+          file !== "domain/trip/deriveSupportingGroups.ts" &&
+          file !== "features/import/spreadsheetSourceAdapter.ts",
       );
 
     expect(leaked).toEqual([]);
+  });
+
+  it("keeps SheetJS library imports inside the spreadsheet adapter", () => {
+    const leaked = sourceFilesUnder(srcRoot)
+      .filter((file) =>
+        /from ["']xlsx(?:\/[^"']*)?["']/u.test(readFileSync(file, "utf8")),
+      )
+      .map((file) => relative(srcRoot, file));
+    expect(leaked).toEqual(["features/import/spreadsheetSourceAdapter.ts"]);
   });
 
   it("keeps Result free of the source domain", () => {
@@ -146,7 +154,10 @@ describe("Source contract architecture boundary", () => {
     });
     const serialized = JSON.stringify(canonical);
     const forbidden = [
-      ...gate.document.evidence_units.flatMap((unit) => [unit.locator, unit.raw_value]),
+      ...gate.document.evidence_units.flatMap((unit) => [
+        unit.locator,
+        unit.raw_value,
+      ]),
       ...evidence
         .itemsFor(gate.document.evidence_units.map((unit) => unit.id))
         .map((item) => JSON.stringify(item)),

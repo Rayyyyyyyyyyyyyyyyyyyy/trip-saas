@@ -61,11 +61,11 @@ Layout variety (row-per-event, calendar grid, column-per-day, and mixed referenc
 - **THEN** intake rejects it with a technical-limit reason before any provider call
 
 ### Requirement: Structural chunking for large workbooks
-When the selected content exceeds one safe request budget, interpretation SHALL chunk only at structural boundaries (whole sheet first, then contiguous used regions) and MUST NOT split a row or merged region without carrying its header context. Every chunk result SHALL pass deterministic reference checks and a global reconciliation step before Review; no chunk may confirm or render independently, and coverage MUST NOT report completeness for content that was not interpreted.
+When the selected content exceeds one safe request budget, interpretation SHALL chunk at whole-sheet boundaries. A single over-budget sheet MUST fail with a technical-limit reason before any provider call. Contiguous-region chunking is deferred unless task 6.2 demonstrates it is necessary; any future region implementation MUST retain row/merge and header context. Every chunk result SHALL pass deterministic reference checks and a global reconciliation step before Review; no chunk may confirm or render independently, and coverage MUST NOT report completeness for content that was not interpreted.
 
 #### Scenario: One sheet exceeds the budget
 - **WHEN** a single selected sheet exceeds the request budget
-- **THEN** it is split into contiguous regions that each retain sheet name, cell ranges, and header context, and Review opens only after reconciliation succeeds
+- **THEN** intake reports a technical-limit failure before any provider call, retains the selected source, and leaves the confirmed trip readable
 
 ### Requirement: Local three-layout spreadsheet acceptance
 Spreadsheet intake SHALL NOT be declared accepted until a live acceptance run passes the faithful rubric criteria (zero missing critical events, zero invented critical events, zero unsupported exact critical facts, complete evidence accounting) on three local fixtures: one row-per-event, one calendar-grid, and one column-per-day workbook. Fixtures SHALL be read from the git-ignored local sample directory and MUST NOT be committed.

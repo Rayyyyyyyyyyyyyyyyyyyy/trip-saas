@@ -7,7 +7,7 @@ import {
   type GeminiDiagnosticSink,
 } from "./createSafeGeminiDiagnostic";
 
-export const GEMINI_ACCEPTANCE_CANDIDATE = "gemini-3.8-flash";
+export const GEMINI_ACCEPTANCE_CANDIDATE = "gemini-3.5-flash";
 // A stalled request must still end, because the intake surface holds a
 // full-screen interaction lock until the parse settles.
 export const DEFAULT_GEMINI_REQUEST_TIMEOUT_MS = 120_000;

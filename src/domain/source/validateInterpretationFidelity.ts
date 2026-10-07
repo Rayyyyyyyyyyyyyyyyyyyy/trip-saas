@@ -1,5 +1,6 @@
 import type { SemanticInterpretationResult, TripFinding } from "../trip/types";
 import type { ValidatedUnifiedSourceDocument } from "./types";
+import { assessTabularDateSupport } from "./assessTabularDateSupport";
 
 const AMBIGUOUS_CLOCK =
   /(?:^|\D)(?:[1-9]|1[01])(?::[0-5]\d|\.[0-5]\d|點)|[一二三四五六七八九十]{1,3}點/u;
@@ -41,7 +42,9 @@ export function validateInterpretationFidelity(
   const unitById = new Map(
     source.evidence_units.map((unit) => [unit.id, unit]),
   );
-  const dayStarts = [...result.draft.days]
+  const dayStarts = (
+    source.source_format === "markdown" ? [...result.draft.days] : []
+  )
     .sort((left, right) => left.source_order - right.source_order)
     .map((day) => ({
       day,
@@ -96,5 +99,6 @@ export function validateInterpretationFidelity(
     AMBIGUOUS_CLOCK.lastIndex = 0;
   }
 
+  findings.push(...assessTabularDateSupport(result.draft, source).findings);
   return findings;
 }

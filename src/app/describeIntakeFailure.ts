@@ -9,6 +9,7 @@ import type { ParseTripFailureCode } from "./parseTrip";
 const parseFailureCodes: Record<ParseTripFailureCode, IntakeFailureCode> = {
   aborted: "cancelled",
   authentication_failed: "credential_rejected",
+  coverage_invalid: "response_coverage_invalid",
   draft_not_reviewable: "draft_not_reviewable",
   invalid_response: "response_invalid",
   malformed_response: "response_unreadable",

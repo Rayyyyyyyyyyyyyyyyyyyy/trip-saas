@@ -37,6 +37,7 @@ import {
 import { ReviewFindingList } from "./ReviewFindingList";
 import type { ReviewAdjustment } from "./reviewAdjustment";
 import { SourceExcerpt } from "./SourceExcerpt";
+import { ReviewSourceSummary } from "./ReviewSourceSummary";
 
 const semanticTypes: SemanticType[] = [
   "flight",
@@ -420,10 +421,22 @@ export function ReviewScreen({
       interpretation.findings,
     ],
   );
-  const findings = useMemo(
-    () => deriveReviewFindings(draft, materialFindings),
-    [draft, materialFindings],
-  );
+  const findings = useMemo(() => {
+    const summarizedImages = new Set(
+      evidence.image_summary.unimported_references.map(
+        (image) => image.source_ref,
+      ),
+    );
+    return deriveReviewFindings(draft, materialFindings).filter(
+      (finding) =>
+        !(
+          ["MISSING_ASSET", "MISSING_RELATIVE_ASSET"].includes(finding.code) &&
+          !finding.blocking &&
+          (finding.source_refs?.length ?? 0) > 0 &&
+          finding.source_refs!.every((ref) => summarizedImages.has(ref))
+        ),
+    );
+  }, [draft, evidence.image_summary, materialFindings]);
   const blocking = findings.some((finding) => finding.blocking);
   const blockingFindings = findings.filter((finding) => finding.blocking);
   const informationalFindings = findings.filter((finding) => !finding.blocking);
@@ -453,6 +466,11 @@ export function ReviewScreen({
             你在這裡的修改只會套用到這次匯入。確認並成功儲存前，原本的行程不會被取代。
           </Typography>
         </header>
+
+        <ReviewSourceSummary
+          evidence={evidence}
+          unparsedCount={interpretation.coverage.unparsed_items.length}
+        />
 
         {errorMessage && (
           <EditorialMarker className="py-2" role="alert" tone="attention">
@@ -499,17 +517,30 @@ export function ReviewScreen({
                 tone="movement"
               >
                 <Typography className="font-utility text-xs font-bold text-trip-muted">
-                  已保留原文並移除沒有來源支持的時間精度
+                  {adjustment.kind === "unsupported_date_year_downgrade"
+                    ? "已保留原文，未採用沒有來源支持的年份"
+                    : "已保留原文並移除沒有來源支持的時間精度"}
                 </Typography>
                 <Typography className="font-editorial text-sm leading-6">
-                  原先：{timeKindLabels[adjustment.before.kind]}
-                  {adjustment.before.start
-                    ? ` ${adjustment.before.start}`
-                    : adjustment.before.daypart
-                      ? ` ${daypartLabels[adjustment.before.daypart]}`
-                      : ""}
-                  {" → "}現在：時間未定，保留「
-                  {adjustment.after.raw_text}」
+                  {adjustment.kind === "unsupported_date_year_downgrade" ? (
+                    <>
+                      原先：{adjustment.before} → 現在：未指定完整日期
+                      {adjustment.partial_text
+                        ? `，保留「${adjustment.partial_text}」`
+                        : ""}
+                    </>
+                  ) : (
+                    <>
+                      原先：{timeKindLabels[adjustment.before.kind]}
+                      {adjustment.before.start
+                        ? ` ${adjustment.before.start}`
+                        : adjustment.before.daypart
+                          ? ` ${daypartLabels[adjustment.before.daypart]}`
+                          : ""}
+                      {" → "}現在：時間未定，保留「
+                      {adjustment.after.raw_text}」
+                    </>
+                  )}
                 </Typography>
               </EditorialMarker>
             ))

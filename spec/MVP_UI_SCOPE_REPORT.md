@@ -69,7 +69,13 @@ Design/prototype artifacts may show Generalized V0 and Golden Viewer states toge
 - Today/runtime destinations remain hidden when the capability is unavailable
 - one active confirmed trip plus one candidate import state does not become a persisted multi-trip library
 
-## 4. V0.1 — Hosted Delivery Lite
+## 4. Narrow Spreadsheet Travel Table before Hosted Delivery
+
+The approved V0.2 implementation slice adds experimental XLSX/UTF-8 CSV intake to the existing Source → Review → local Canonical/Result pipeline. It uses up to 19 visible sheets, selected in original order; XLS is not accepted, embedded images are not imported, and no local-rule semantic fallback is added. The new Home sheet selection and Review mini-grid do not create a new Result renderer.
+
+This slice is implemented before Hosted Delivery while supported-format guidance remains gated by live faithful acceptance on Busan, 澎湖 and 名古屋 independently. Local workbook extraction, schema/unit checks and mocked browser flows cannot pass that semantic gate. Markdown benchmark and exact-model production-default gates remain unresolved independently.
+
+### V0.1 — Hosted Delivery Lite
 
 Hosted publication is a separate capability.
 

@@ -3,6 +3,7 @@ import type {
   SemanticInterpretationResult,
   TripTime,
 } from "../../domain/trip/types";
+import type { TabularDateDecision } from "../../domain/source/assessTabularDateSupport";
 
 const LOCAL_FIDELITY_FINDING_PREFIX = "finding:local-fidelity:";
 const UNSUPPORTED_CLOCK_CODE = "AMBIGUOUS_CLOCK_PRECISION_INFERRED";
@@ -18,7 +19,18 @@ export type UnsupportedClockPrecisionAdjustment = {
   after: TripTime;
 };
 
-export type ReviewAdjustment = UnsupportedClockPrecisionAdjustment;
+export type UnsupportedDateYearAdjustment = {
+  id: string;
+  kind: "unsupported_date_year_downgrade";
+  finding_id: string;
+  target: TabularDateDecision["target"];
+  source_refs: string[];
+  before: string;
+  after: null;
+  partial_text: string | null;
+};
+export type ReviewAdjustment =
+  UnsupportedClockPrecisionAdjustment | UnsupportedDateYearAdjustment;
 
 export type ReviewAdjustmentResult = {
   candidate: ParsedTripDraft;
@@ -31,12 +43,13 @@ function unresolvedFieldFor(time: TripTime) {
 
 /**
  * The closed pre-Review recovery stage. It only accepts findings emitted by the
- * local source-fidelity validator and only removes unsupported clock precision.
+ * local source-fidelity validator and removes unsupported clock/date precision.
  * The interpretation passed in is the recorded provider outcome and is never
  * mutated; callers keep it separately from this session-only candidate/result.
  */
 export function applyConservativeReviewAdjustments(
   interpretation: SemanticInterpretationResult,
+  dateDecisions: readonly TabularDateDecision[] = [],
 ): ReviewAdjustmentResult {
   if (interpretation.status !== "draft" || !interpretation.draft) {
     throw new Error(
@@ -94,5 +107,86 @@ export function applyConservativeReviewAdjustments(
     });
   }
 
+  const knownIds = new Set([
+    candidate.trip.id,
+    ...candidate.days.map((item) => item.id),
+    ...candidate.entities.map((item) => item.id),
+    ...candidate.relationships.map((item) => item.id),
+    ...candidate.supporting_items.map((item) => item.id),
+    ...candidate.findings.map((item) => item.id),
+  ]);
+  for (const decision of dateDecisions) {
+    const localFinding = interpretation.findings.find(
+      (item) =>
+        item.id === decision.finding_id &&
+        item.code === "MISSING_YEAR" &&
+        item.id?.startsWith(LOCAL_FIDELITY_FINDING_PREFIX) &&
+        JSON.stringify(item.source_refs) ===
+          JSON.stringify(decision.source_refs),
+    );
+    if (!localFinding) continue;
+    if (decision.target.kind === "trip") {
+      if (
+        candidate.trip[decision.target.field] !== decision.before ||
+        JSON.stringify(candidate.trip.source_refs) !==
+          JSON.stringify(decision.source_refs)
+      )
+        continue;
+      candidate.trip[decision.target.field] = null;
+      if (
+        decision.partial_text &&
+        !candidate.supporting_items.some(
+          (item) => item.text === decision.partial_text,
+        )
+      ) {
+        let suffix = 0;
+        let id = `supporting:partial-date:${suffix}`;
+        while (knownIds.has(id)) id = `supporting:partial-date:${++suffix}`;
+        knownIds.add(id);
+        candidate.supporting_items.push({
+          id,
+          kind: "note",
+          text: decision.partial_text,
+          url: null,
+          unresolved: true,
+          source_refs: [...decision.source_refs],
+        });
+      }
+    } else {
+      const day = candidate.days.find(
+        (item) =>
+          item.id ===
+          (decision.target.kind === "day" ? decision.target.day_id : ""),
+      );
+      if (
+        !day ||
+        day.date !== decision.before ||
+        JSON.stringify(day.source_refs) !== JSON.stringify(decision.source_refs)
+      )
+        continue;
+      day.date = null;
+      const year = decision.before.slice(0, 4);
+      const retainedLabel = day.label
+        ?.replaceAll(decision.before, "")
+        .replace(new RegExp(`(?<![0-9])${year}(?![0-9])年?`, "gu"), "")
+        .trim();
+      if (!decision.partial_text) day.label = retainedLabel || null;
+      else if (!retainedLabel || decision.partial_text.includes(retainedLabel))
+        day.label = decision.partial_text;
+      else if (retainedLabel.includes(decision.partial_text))
+        day.label = retainedLabel;
+      else day.label = `${retainedLabel} · ${decision.partial_text}`;
+    }
+    adjustments.push({
+      id: `adjustment:unsupported-year:${decision.finding_id}`,
+      kind: "unsupported_date_year_downgrade",
+      finding_id: decision.finding_id,
+      target: decision.target,
+      source_refs: [...decision.source_refs],
+      before: decision.before,
+      after: null,
+      partial_text: decision.partial_text,
+    });
+  }
   return { candidate, adjustments };
 }

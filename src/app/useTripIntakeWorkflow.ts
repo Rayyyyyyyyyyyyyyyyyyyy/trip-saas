@@ -4,9 +4,11 @@ import type {
   ValidatedUnifiedSourceDocument,
 } from "../domain/source/types";
 import { validateUnifiedSourceDocument } from "../domain/source/validateUnifiedSourceDocument";
+import { assessTabularDateSupport } from "../domain/source/assessTabularDateSupport";
 import type { TextSourceInput } from "../domain/trip/types";
 import { deriveSupportingGroups } from "../domain/trip/deriveSupportingGroups";
 import { extractMarkdownSource } from "../features/import/markdownSourceAdapter";
+import type { PreparedSpreadsheetFile } from "../features/import/spreadsheetSourceAdapter";
 import {
   createIntakeFailure,
   IntakeFailureError,
@@ -24,6 +26,7 @@ import type { ParseTrip } from "./parseTrip";
 import {
   createInitialTripWorkflowState,
   tripWorkflowReducer,
+  type IntakeSourceInput,
 } from "./tripWorkflow";
 import { createWorkflowRequestCoordinator } from "./tripWorkflowRequests";
 import {
@@ -33,10 +36,18 @@ import {
 
 export type MarkdownSubmission =
   { mode: "file"; file: File } | { mode: "paste"; paste: string };
-export type PreparedMarkdownSource = {
-  input: TextSourceInput;
+export type PreparedSource = {
+  input: IntakeSourceInput;
   document: ValidatedUnifiedSourceDocument;
 };
+export type PreparedMarkdownSource = PreparedSource;
+export type PreparedSourceSubmission = {
+  mode: "prepared";
+  identity: object | string;
+  prepare: (signal: AbortSignal) => PreparedSource | Promise<PreparedSource>;
+};
+export type TripIntakeSubmission =
+  MarkdownSubmission | PreparedSourceSubmission;
 export type SourcePreparedHandler = (
   source: PreparedMarkdownSource,
 ) => void | Promise<void>;
@@ -71,6 +82,12 @@ export function useTripIntakeWorkflow(
   );
   const coordinator = useRef(createWorkflowRequestCoordinator());
   const activeId = useRef<string | null>(null);
+  const preparedSource = useRef<PreparedSource | null>(null);
+  const selectedIdentity = useRef<{
+    mode: TripIntakeSubmission["mode"];
+    value: object | string;
+  } | null>(null);
+  const sourceGeneration = useRef(0);
   const stop = useCallback(() => {
     if (!activeId.current) return;
     const sessionId = activeId.current;
@@ -78,17 +95,95 @@ export function useTripIntakeWorkflow(
     activeId.current = null;
     dispatch({ type: "workflow_cancelled", sessionId });
   }, []);
+  const invalidatePreparedSource = useCallback(() => {
+    preparedSource.current = null;
+    selectedIdentity.current = null;
+    sourceGeneration.current += 1;
+    stop();
+  }, [stop]);
   useEffect(
     () => () => {
       if (activeId.current) coordinator.current.cancelSession(activeId.current);
+      preparedSource.current = null;
+      selectedIdentity.current = null;
+      sourceGeneration.current += 1;
     },
     [],
   );
+  const inspectSpreadsheetFile = useCallback(
+    async (file: File): Promise<PreparedSpreadsheetFile | null> => {
+      invalidatePreparedSource();
+      const session = coordinator.current.startSession();
+      const request = coordinator.current.startRequest(session.sessionId);
+      activeId.current = session.sessionId;
+      const current = () =>
+        coordinator.current.isCurrent(session.sessionId, request.requestId);
+      dispatch({
+        type: "intake_started",
+        sessionId: session.sessionId,
+        source: null,
+      });
+      const run = createTripProcessingRun(
+        request.signal,
+        (status) => {
+          if (current())
+            dispatch({
+              type: "processing_stage",
+              sessionId: session.sessionId,
+              status,
+            });
+        },
+        options.processing?.deadlines,
+      );
+      try {
+        const inspected = await run.wait("reading", async () => {
+          const { prepareSpreadsheetFile } =
+            await import("../features/import/spreadsheetSourceAdapter");
+          if (!current() || run.signal.aborted) return null;
+          return prepareSpreadsheetFile(file);
+        });
+        if (!current() || run.signal.aborted) return null;
+        dispatch({ type: "source_prepared", sessionId: session.sessionId });
+        return inspected;
+      } catch (cause) {
+        if (current())
+          dispatch({
+            type: "workflow_failed",
+            sessionId: session.sessionId,
+            failure: toIntakeFailure(cause, "spreadsheet_unreadable"),
+          });
+        return null;
+      } finally {
+        run.finish();
+        if (current()) coordinator.current.cancelSession(session.sessionId);
+        if (activeId.current === session.sessionId) activeId.current = null;
+      }
+    },
+    [invalidatePreparedSource, options.processing?.deadlines],
+  );
   const submit = useCallback(
     async (
-      submission: MarkdownSubmission,
+      submission: TripIntakeSubmission,
       selectedParseTrip: ParseTrip | undefined = options.parseTrip,
     ) => {
+      const identity = {
+        mode: submission.mode,
+        value:
+          submission.mode === "file"
+            ? submission.file
+            : submission.mode === "paste"
+              ? submission.paste
+              : submission.identity,
+      };
+      if (
+        selectedIdentity.current?.mode !== identity.mode ||
+        selectedIdentity.current.value !== identity.value
+      ) {
+        invalidatePreparedSource();
+        selectedIdentity.current = identity;
+      }
+      const generation = sourceGeneration.current;
+      const cached = preparedSource.current;
       const session = coordinator.current.startSession();
       const request = coordinator.current.startRequest(session.sessionId);
       activeId.current = session.sessionId;
@@ -114,36 +209,70 @@ export function useTripIntakeWorkflow(
       );
       let extractionComplete = false;
       try {
-        const input = await run.wait("reading", () =>
-          processing?.read
-            ? processing.read(submission, run.signal)
-            : submission.mode === "file"
-              ? normalizeMarkdownFile(submission.file)
-              : normalizePastedMarkdown(submission.paste),
-        );
-        dispatch({
-          type: "source_read",
-          sessionId: session.sessionId,
-          source: input,
-        });
-        const extracted = await run.wait("extracting", () =>
-          processing?.extract
-            ? processing.extract(input, run.signal)
-            : extractMarkdownSource(input),
-        );
-        const document = await run.wait("validating_source", async () => {
-          const candidate = processing?.validate
-            ? await processing.validate(extracted, input, run.signal)
-            : extracted;
-          const gate = validateUnifiedSourceDocument(candidate, {
-            source_id: input.source_id,
+        let input: IntakeSourceInput;
+        let document: ValidatedUnifiedSourceDocument;
+        const sourceRead = (source: IntakeSourceInput) =>
+          dispatch({
+            type: "source_read",
+            sessionId: session.sessionId,
+            source,
           });
-          if (!gate.valid)
-            throw new IntakeFailureError(
-              createIntakeFailure("source_document_invalid"),
+        if (cached) {
+          ({ input, document } = cached);
+          sourceRead(input);
+        } else {
+          let extracted: UnifiedSourceDocument;
+          if (submission.mode === "prepared") {
+            const source = await run.wait("extracting", () =>
+              submission.prepare(run.signal),
             );
-          return gate.document;
-        });
+            input = source.input;
+            sourceRead(input);
+            extracted = source.document;
+          } else {
+            const markdownInput = await run.wait("reading", () =>
+              processing?.read
+                ? processing.read(submission, run.signal)
+                : submission.mode === "file"
+                  ? normalizeMarkdownFile(submission.file)
+                  : normalizePastedMarkdown(submission.paste),
+            );
+            input = markdownInput;
+            sourceRead(input);
+            extracted = await run.wait("extracting", () =>
+              processing?.extract
+                ? processing.extract(markdownInput, run.signal)
+                : extractMarkdownSource(markdownInput),
+            );
+          }
+          document = await run.wait("validating_source", async () => {
+            const candidate =
+              submission.mode !== "prepared" && processing?.validate
+                ? await processing.validate(
+                    extracted,
+                    input as TextSourceInput,
+                    run.signal,
+                  )
+                : extracted;
+            const gate = validateUnifiedSourceDocument(candidate, {
+              source_id: input.source_id,
+            });
+            if (!gate.valid)
+              throw new IntakeFailureError(
+                createIntakeFailure("source_document_invalid"),
+              );
+            return gate.document;
+          });
+          // Neither late preparation nor an invalidated selection may refill
+          // this single cache after stop, timeout, replacement or unmount.
+          if (
+            !current() ||
+            run.signal.aborted ||
+            generation !== sourceGeneration.current
+          )
+            return;
+          preparedSource.current = { input, document };
+        }
         extractionComplete = true;
         dispatch({
           type: "extraction_completed",
@@ -205,12 +334,30 @@ export function useTripIntakeWorkflow(
               interpretation,
             });
           } else {
+            const dates = assessTabularDateSupport(
+              interpretation.draft,
+              document,
+            );
             const reviewInterpretation = {
               ...interpretation,
-              draft: deriveSupportingGroups(interpretation.draft, document),
+              findings: [
+                ...interpretation.findings,
+                ...dates.findings.filter(
+                  (finding) =>
+                    !interpretation.findings.some(
+                      (existing) => existing.id === finding.id,
+                    ),
+                ),
+              ],
             };
-            const adjustmentResult =
-              applyConservativeReviewAdjustments(reviewInterpretation);
+            const adjustmentResult = applyConservativeReviewAdjustments(
+              reviewInterpretation,
+              dates.dateDecisions,
+            );
+            adjustmentResult.candidate = deriveSupportingGroups(
+              adjustmentResult.candidate,
+              document,
+            );
             dispatch({
               type: "review_ready",
               sessionId: session.sessionId,
@@ -219,7 +366,7 @@ export function useTripIntakeWorkflow(
               draft: adjustmentResult.candidate,
               findings: deriveReviewFindings(
                 adjustmentResult.candidate,
-                interpretation.findings,
+                reviewInterpretation.findings,
               ),
             });
           }
@@ -246,6 +393,7 @@ export function useTripIntakeWorkflow(
       options.onSourcePrepared,
       options.parseTrip,
       options.processing,
+      invalidatePreparedSource,
     ],
   );
   const submitWithFallback = useCallback(
@@ -261,6 +409,8 @@ export function useTripIntakeWorkflow(
     submit,
     submitWithFallback,
     stop,
+    invalidatePreparedSource,
+    inspectSpreadsheetFile,
     fallbackModel:
       options.fallbackParseTrip && options.fallbackModel
         ? options.fallbackModel

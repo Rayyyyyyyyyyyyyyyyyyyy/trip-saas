@@ -19,6 +19,13 @@ export type IntakeFailureCode =
   | "source_unreadable"
   | "source_unsupported_type"
   | "source_invalid_contract"
+  | "spreadsheet_unsupported_type"
+  | "spreadsheet_unreadable"
+  | "spreadsheet_empty"
+  | "spreadsheet_too_large"
+  | "spreadsheet_sheet_limit"
+  | "spreadsheet_selection_invalid"
+  | "spreadsheet_extraction_limit"
   | "extraction_failed"
   | "source_document_invalid"
   | "credential_unavailable"
@@ -32,6 +39,7 @@ export type IntakeFailureCode =
   | "provider_rate_limited"
   | "response_unreadable"
   | "response_invalid"
+  | "response_coverage_invalid"
   | "draft_not_reviewable"
   | "confirmation_candidate_invalid"
   | "confirmation_persistence_failed"
@@ -75,13 +83,48 @@ const intakeFailureCatalog: Record<
     recoverable: true,
   },
   source_unsupported_type: {
-    message: `這個檔案格式還不能讀取，目前只支援 .md 或 .markdown。${unchanged}，請換一份檔案再試一次。`,
+    message: `這個副檔名目前不能匯入；PDF、圖片、DOCX 與 .xls 尚不支援。${unchanged}，請換一份檔案再試一次。`,
     phase: "reading",
     recoverable: true,
   },
   source_invalid_contract: {
     message: `這份內容的格式目前無法處理。${unchanged}，請調整內容後再試一次。`,
     phase: "reading",
+    recoverable: true,
+  },
+  spreadsheet_unsupported_type: {
+    message: `這個表格格式目前不能讀取，請使用 .xlsx 或 UTF-8 CSV；.xls 尚未開放。${unchanged}。`,
+    phase: "reading",
+    recoverable: true,
+  },
+  spreadsheet_unreadable: {
+    message: `無法讀取這份表格，檔案可能已損壞、加密或格式不符。${unchanged}，請另存為未加密的 .xlsx 或 UTF-8 CSV 後再試。`,
+    phase: "extraction",
+    recoverable: true,
+  },
+  spreadsheet_empty: {
+    message: `所選分頁沒有可讀取的內容。${unchanged}，請改選有內容的分頁或檔案。`,
+    phase: "extraction",
+    recoverable: true,
+  },
+  spreadsheet_too_large: {
+    message: `這份表格超過 128 MiB 的檔案大小上限。${unchanged}，請縮小檔案後再試。`,
+    phase: "reading",
+    recoverable: true,
+  },
+  spreadsheet_sheet_limit: {
+    message: `這份表格超過 19 個可見分頁的處理上限。${unchanged}，請分成較小的檔案後再試。`,
+    phase: "extraction",
+    recoverable: true,
+  },
+  spreadsheet_selection_invalid: {
+    message: `請至少選擇一個可見分頁。${unchanged}，請重新選擇後再試。`,
+    phase: "extraction",
+    recoverable: true,
+  },
+  spreadsheet_extraction_limit: {
+    message: `所選表格內容超過結構擷取的安全上限，因此沒有送出判讀。${unchanged}，請減少分頁或內容後再試。`,
+    phase: "extraction",
     recoverable: true,
   },
   extraction_failed: {
@@ -150,6 +193,11 @@ const intakeFailureCatalog: Record<
   },
   response_invalid: {
     message: `判讀回來的結構沒有通過本機檢查，因此沒有採用。${unchanged}，請再試一次或換一份內容。`,
+    phase: "response_validation",
+    recoverable: true,
+  },
+  response_coverage_invalid: {
+    message: `判讀結果沒有完整對應這份來源，因此沒有採用。${unchanged}，請再試一次或換一份內容。`,
     phase: "response_validation",
     recoverable: true,
   },

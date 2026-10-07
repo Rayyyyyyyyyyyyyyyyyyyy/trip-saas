@@ -15,6 +15,7 @@
     "test:browser": "playwright test",
     "test:production-browser": "playwright test --config playwright.production.config.ts",
     "benchmark:external-markdown-001": "vitest run --config vitest.benchmark.config.ts",
+    "benchmark:spreadsheet": "vitest run --config vitest.spreadsheet-benchmark.config.ts",
     "test:credential-compat": "playwright test tests/browser/credential-key-compatibility.spec.ts --project=platform-chrome --project=platform-webkit",
     "test:credential-security": "playwright test tests/browser/credential-key-compatibility.spec.ts tests/browser/credential-security-policy.spec.ts --project=platform-chrome --project=platform-webkit",
     "test:persistence-browser": "playwright test tests/browser/confirmed-trip-repository.spec.ts tests/browser/gemini-credential-repository.spec.ts tests/browser/persistence-storage-inspection.spec.ts tests/browser/repository-failure-cases.spec.ts --project=platform-chrome --project=platform-webkit",
@@ -34,7 +35,8 @@
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "tailwindcss": "^4.3.3",
-    "unified": "^11.0.5"
+    "unified": "^11.0.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@babel/parser": "^7.29.8",

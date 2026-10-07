@@ -7,7 +7,7 @@ import { confirmReviewedTrip } from "../features/review/confirmReviewedTrip";
 import { InsufficientRecovery } from "../features/review/InsufficientRecovery";
 import { deriveReviewFindings } from "../features/review/reviewCandidate";
 import { ReviewScreen } from "../features/review/ReviewScreen";
-import { Home, type PreparedMarkdownSource } from "../features/import/Home";
+import { Home } from "../features/import/Home";
 import { importCanonicalTripFile } from "../features/import/canonicalTripImport";
 import { describeConfirmationFailure } from "./describeIntakeFailure";
 import type { ConfirmedTripRepository } from "../persistence/confirmedTripRepository";
@@ -19,6 +19,7 @@ import { TripConfirmationSuccess } from "./TripConfirmationSuccess";
 import {
   useTripIntakeWorkflow,
   type TripIntakeOptions,
+  type SourcePreparedHandler,
 } from "./useTripIntakeWorkflow";
 import { useMarkdownIntake } from "../features/import/useMarkdownIntake";
 import {
@@ -45,7 +46,7 @@ export type TripRuntimeStartupProps = {
     trip: CanonicalTrip,
     controls: { onShowHome: () => void; sample: boolean },
   ) => ReactNode;
-  onSourcePrepared?: (source: PreparedMarkdownSource) => void | Promise<void>;
+  onSourcePrepared?: SourcePreparedHandler;
   parseTrip?: ParseTrip;
   processing?: TripIntakeOptions;
 };

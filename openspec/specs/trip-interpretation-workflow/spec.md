@@ -36,14 +36,14 @@ The Gemini adapter SHALL own only provider transport concerns, including endpoin
 - **THEN** the adapter reports a bounded provider-response failure without exposing the raw envelope to App, Review, CanonicalTrip, or diagnostics
 
 ### Requirement: Benchmark-gated exact default model
-The selected V0 default candidate SHALL be the exact stable model ID `gemini-3.8-flash`. The production composition root MUST NOT activate that default until its generated structured-output projection, deterministic parser fixtures, and live External Markdown Benchmark #001 pass. The App MUST NOT use a moving alias or silently fall back to another model, and model identity MUST NOT enter trip data or Result presentation.
+The selected V0 default candidate SHALL be the exact user-selected model ID `gemini-3.5-flash`. The production composition root MUST NOT activate that default until its generated structured-output projection, deterministic parser fixtures, and live External Markdown Benchmark #001 pass. The App MUST NOT use a moving alias or silently fall back to another model, and model identity MUST NOT enter trip data or Result presentation.
 
 #### Scenario: Model acceptance gate passes
-- **WHEN** `gemini-3.8-flash` passes the required deterministic and live parser-quality gates
-- **THEN** a production build with no explicit test override uses exact `gemini-3.8-flash` for Markdown interpretation
+- **WHEN** `gemini-3.5-flash` passes the required deterministic and live parser-quality gates
+- **THEN** a production build with no explicit test override uses exact `gemini-3.5-flash` for Markdown interpretation
 
 #### Scenario: Model acceptance is absent or fails
-- **WHEN** the required `gemini-3.8-flash` acceptance evidence is missing or failing
+- **WHEN** the required `gemini-3.5-flash` acceptance evidence is missing or failing
 - **THEN** production does not silently activate it or substitute another model and exposes bounded interpreter-unavailable recovery
 
 #### Scenario: A later default-model change is proposed

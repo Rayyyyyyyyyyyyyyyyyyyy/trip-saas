@@ -30,6 +30,13 @@ export type ReviewEvidenceItem =
       source_ref: string;
       locator_label: string;
       sheet_name: string;
+      sheet_id: string;
+      row_start: number;
+      row_end: number;
+      column_start: number;
+      column_end: number;
+      fragment_index: number;
+      fragment_count: number;
       text: string;
       truncated: boolean;
     }
@@ -56,6 +63,18 @@ export type ReviewEvidenceFinding = {
 
 export type ReviewEvidenceProjection = {
   findings: ReviewEvidenceFinding[];
+  coverage_scope:
+    | { kind: "source" }
+    | { kind: "selected_sheets"; excluded_sheet_names: string[] };
+  image_summary: {
+    unimported_references: Array<{
+      source_ref: string;
+      locator_label: string;
+      label: string;
+      target: string;
+    }>;
+    workbook_inventory_unavailable: boolean;
+  };
   itemsFor: (sourceRefs: readonly string[]) => ReviewEvidenceItem[];
 };
 
@@ -85,17 +104,26 @@ function tabularEvidenceOf(
   );
 }
 
-function itemsForUnit(unit: SourceEvidenceUnit): ReviewEvidenceItem[] {
+function itemsForUnit(
+  unit: SourceEvidenceUnit,
+  missingAssets: Set<string>,
+): ReviewEvidenceItem[] {
   const tabular = tabularEvidenceOf(unit);
-  const primary = excerptChunks(
-    tabular ? unit.display_value || unit.raw_value : unit.raw_value,
-  ).map((text): ReviewEvidenceItem =>
+  const chunks = excerptChunks(tabular ? unit.display_value : unit.raw_value);
+  const primary = chunks.map((text, index): ReviewEvidenceItem =>
     tabular
       ? {
           kind: "tabular_excerpt",
           source_ref: unit.id,
           locator_label: unit.locator,
           sheet_name: tabular.sheet_name,
+          sheet_id: tabular.sheet_id,
+          row_start: tabular.row_start,
+          row_end: tabular.row_end,
+          column_start: tabular.column_start,
+          column_end: tabular.column_end,
+          fragment_index: index,
+          fragment_count: chunks.length,
           text,
           truncated: false,
         }
@@ -111,7 +139,11 @@ function itemsForUnit(unit: SourceEvidenceUnit): ReviewEvidenceItem[] {
   // Images are evidence in their own right: a Review finding about a missing
   // ticket photo must be able to name the asset, not only the prose near it.
   const assets = unit.links
-    .filter((link) => link.kind === "image")
+    .filter(
+      (link) =>
+        link.kind === "image" &&
+        !missingAssets.has(JSON.stringify([unit.id, link.target])),
+    )
     .map((link): ReviewEvidenceItem => ({
       kind: "asset_reference",
       source_ref: unit.id,
@@ -129,8 +161,43 @@ export function createReviewEvidenceProjection(
   const unitsById = new Map(
     document.evidence_units.map((unit) => [unit.id, unit]),
   );
+  const missingAssets = new Set<string>();
+  const unimportedReferences: ReviewEvidenceProjection["image_summary"]["unimported_references"] =
+    [];
+  for (const finding of document.extraction_findings) {
+    if (finding.code !== "MISSING_RELATIVE_ASSET") continue;
+    const identity = JSON.stringify([
+      finding.evidence_unit_ref,
+      finding.target,
+    ]);
+    if (missingAssets.has(identity)) continue;
+    missingAssets.add(identity);
+    const unit = unitsById.get(finding.evidence_unit_ref);
+    const link = unit?.links.find(
+      (item) => item.kind === "image" && item.target === finding.target,
+    );
+    unimportedReferences.push({
+      source_ref: finding.evidence_unit_ref,
+      locator_label: finding.locator,
+      label: link?.label ?? "",
+      target: finding.target,
+    });
+  }
 
   return {
+    coverage_scope:
+      document.source_format === "tabular"
+        ? {
+            kind: "selected_sheets",
+            excluded_sheet_names: [...(document.excluded_sheets ?? [])],
+          }
+        : { kind: "source" },
+    image_summary: {
+      unimported_references: unimportedReferences,
+      workbook_inventory_unavailable:
+        document.source_format === "tabular" &&
+        document.input_mode !== "csv_file",
+    },
     findings: document.extraction_findings.map((finding) => ({
       code: finding.code,
       message: finding.message,
@@ -148,7 +215,7 @@ export function createReviewEvidenceProjection(
         seen.add(sourceRef);
         const unit = unitsById.get(sourceRef);
         return unit
-          ? itemsForUnit(unit)
+          ? itemsForUnit(unit, missingAssets)
           : [{ kind: "missing_reference", source_ref: sourceRef }];
       };
       return sourceRefs.flatMap((sourceRef) => {

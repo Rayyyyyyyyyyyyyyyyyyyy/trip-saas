@@ -1,5 +1,5 @@
 import parsedTripDraftSchema from "../../domain/trip/schemas/parsed-trip-draft.v1.schema.json";
-import semanticInterpretationResultSchema from "../../domain/trip/schemas/semantic-interpretation-result.v1.schema.json";
+import semanticInterpretationResultSchema from "../../domain/trip/schemas/semantic-interpretation-result.v2.schema.json";
 
 type JsonValue =
   null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };

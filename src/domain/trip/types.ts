@@ -262,12 +262,22 @@ export interface SourceExpectation {
   block_ids: string[];
 }
 
+export interface BlockDisposition {
+  source_ref: string;
+  disposition: "interpreted" | "supporting" | "unparsed";
+}
+
+export interface BlockDispositionRange {
+  from_id: string;
+  to_id: string;
+  disposition: "interpreted" | "supporting";
+}
+
 export interface Coverage {
   total_blocks: number;
-  block_dispositions: Array<{
-    source_ref: string;
-    disposition: "interpreted" | "supporting" | "unparsed";
-  }>;
+  block_dispositions: BlockDisposition[];
+  /** Provider-only compression; expanded before any Review or draft gate. */
+  block_disposition_ranges?: BlockDispositionRange[];
   unparsed_items: Array<{
     source_ref: string;
     locator: string;
@@ -278,7 +288,7 @@ export interface Coverage {
 }
 
 export interface SemanticInterpretationResult {
-  schema_version: "semantic-interpretation-result.v1";
+  schema_version: "semantic-interpretation-result.v2";
   source_schema_version: string;
   source_id: string;
   status: "draft" | "insufficient";

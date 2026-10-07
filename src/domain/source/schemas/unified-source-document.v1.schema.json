@@ -17,7 +17,14 @@
     "schema_version": { "const": "unified-source-document.v1" },
     "source_id": { "$ref": "#/$defs/stableId" },
     "display_name": { "type": "string", "minLength": 1, "pattern": "\\S" },
-    "input_mode": { "enum": ["markdown_file", "pasted_markdown"] },
+    "input_mode": {
+      "enum": [
+        "markdown_file",
+        "pasted_markdown",
+        "spreadsheet_file",
+        "csv_file"
+      ]
+    },
     "source_format": { "enum": ["markdown", "tabular"] },
     "evidence_units": {
       "type": "array",
@@ -27,6 +34,11 @@
     "extraction_findings": {
       "type": "array",
       "items": { "$ref": "#/$defs/extractionFinding" }
+    },
+    "excluded_sheets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 256 }
     }
   },
   "$defs": {
@@ -160,6 +172,38 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 2048
+        },
+        "typed_hint": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "value"],
+              "properties": {
+                "kind": { "const": "number" },
+                "value": { "type": "number" }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "value"],
+              "properties": {
+                "kind": { "const": "boolean" },
+                "value": { "type": "boolean" }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "value", "date_system"],
+              "properties": {
+                "kind": { "const": "date_serial" },
+                "value": { "type": "number" },
+                "date_system": { "enum": ["1900", "1904"] }
+              }
+            }
+          ]
         }
       }
     },
@@ -175,7 +219,14 @@
         "target"
       ],
       "properties": {
-        "code": { "enum": ["MISSING_RELATIVE_ASSET"] },
+        "code": {
+          "enum": [
+            "MISSING_RELATIVE_ASSET",
+            "MISSING_CACHED_VALUE",
+            "CACHED_VALUE_ERROR",
+            "COVERED_CELL_CONTENT"
+          ]
+        },
         "severity": { "enum": ["warning", "error"] },
         "message": { "type": "string", "minLength": 1, "pattern": "\\S" },
         "evidence_unit_ref": { "$ref": "#/$defs/stableId" },

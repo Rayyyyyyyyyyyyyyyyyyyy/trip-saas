@@ -79,7 +79,7 @@ const parseTrip: ParseTrip = vi.fn(async ({ source }: ParseTripRequest) => {
     source_refs: [sourceRef],
   }));
   return {
-    schema_version: "semantic-interpretation-result.v1",
+    schema_version: "semantic-interpretation-result.v2",
     source_schema_version: source.schema_version,
     source_id: source.source_id,
     status: "draft",
@@ -134,7 +134,7 @@ describe("integrated local Review workflow", () => {
       ];
       recordedDraft = draft;
       return {
-        schema_version: "semantic-interpretation-result.v1",
+        schema_version: "semantic-interpretation-result.v2",
         source_schema_version: source.schema_version,
         source_id: source.source_id,
         status: "draft",
@@ -224,7 +224,7 @@ describe("integrated local Review workflow", () => {
         },
       }));
       recordedInterpretation = {
-        schema_version: "semantic-interpretation-result.v1",
+        schema_version: "semantic-interpretation-result.v2",
         source_schema_version: source.schema_version,
         source_id: source.source_id,
         status: "draft",

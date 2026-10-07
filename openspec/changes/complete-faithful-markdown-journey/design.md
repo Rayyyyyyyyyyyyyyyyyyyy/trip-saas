@@ -14,8 +14,9 @@ replacement. Latest recorded checks are 299 unit cases, 10 focused browser
 cases and a successful build; this planning change does not rerun or extend that
 claim. The live exact-model comparison failed at low; medium/high entered
 Review but retained fidelity defects. Official model research selected exact
-stable `gemini-3.8-flash` as the next candidate. Its gates have not yet been
-rerun, and no production default is accepted.
+stable `gemini-3.8-flash` as the next candidate historically. On 2026-10-07
+the user chose to retain exact `gemini-3.5-flash`; current response-v2 gates
+have not yet been rerun for it, and no production default is accepted.
 
 ## Goals / Non-Goals
 

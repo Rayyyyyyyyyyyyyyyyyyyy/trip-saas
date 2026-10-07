@@ -269,7 +269,7 @@ Reassess or stop if:
 - permanently pending reading, extraction, source validation, provider, and local response-validation fixtures leave the blocking modal through the configured application deadline
 - `停止這次判讀` aborts the current identity, closes the modal, retains the selected source where technically possible, and preserves the confirmed trip
 - success, insufficient, failure, timeout, and stop clear active timers; inactive late success/failure cannot advance or reopen the workflow
-- production uses no accepted default until exact `gemini-3.8-flash` passes generated-schema, deterministic parser, and live External Markdown Benchmark #001 gates
+- production uses no accepted default until exact `gemini-3.5-flash` passes generated-schema, deterministic parser, and live External Markdown Benchmark #001 gates
 - no moving alias or silent alternate-model fallback is observed
 
 ### Replacement transaction

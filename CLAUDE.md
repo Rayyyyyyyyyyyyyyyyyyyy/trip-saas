@@ -76,7 +76,7 @@ Key consequences when editing:
 
 ## Configuration gates
 
-- `VITE_GEMINI_MODEL` (build-time) decides whether Gemini intake exists at all. Production is intentionally **unset**: exact `gemini-3.8-flash` is only the acceptance candidate until live External Markdown Benchmark #001 passes. Never pin a moving alias or add a silent fallback model.
+- `VITE_GEMINI_MODEL` (build-time) decides whether Gemini intake exists at all. Production is intentionally **unset**: exact `gemini-3.5-flash` is only the acceptance candidate until live External Markdown Benchmark #001 passes. Never pin a moving alias or add a silent fallback model.
 - Hosted Delivery (Netlify) must not be implemented until that benchmark gate passes.
 - All runtime date/time decisions use `Asia/Tokyo`. Never display a fabricated `NOW` or invent time precision the source does not support.
 

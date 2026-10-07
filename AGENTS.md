@@ -28,7 +28,7 @@ Build and maintain the personal viewer and the explicitly approved Markdown V0 p
 - A Home-first setup flow for Gemini key setup, Markdown upload, canonical JSON import, format guidance, privacy notices, and a reserved optional-form area
 - One persistent browser-local personal Gemini API key control for direct parsing requests
 
-Hosted delivery is the gated V0.1 Netlify capability defined in `spec/01_CANONICAL_CONTEXT.md` and `spec/05_V0_IMPLEMENTATION_PLAN.md`. It MUST NOT be implemented until External Markdown Benchmark #001 passes its acceptance gate. V0.2 is limited to a narrow Spreadsheet Travel Table slice; advanced spreadsheets, DOCX, screenshots, and mind maps remain later evidence-driven work. PDF input is not planned; later Result-to-PDF export is a separate archival feature. Do not add accounts, email recovery, cross-device ownership/editing, permanent hosted retention, recommendations, expenses, packing, social features, booking, or automatic replanning unless the user explicitly asks.
+Hosted delivery is the gated V0.1 Netlify capability defined in `spec/01_CANONICAL_CONTEXT.md` and `spec/05_V0_IMPLEMENTATION_PLAN.md`. It MUST NOT be implemented until External Markdown Benchmark #001 passes its acceptance gate. The approved implementation order now prepares the narrow V0.2 Spreadsheet Travel Table slice before Hosted Delivery; support declaration still requires its three-layout live acceptance gate. V0.2 is limited to that slice; advanced spreadsheets, DOCX, screenshots, and mind maps remain later evidence-driven work. PDF input is not planned; later Result-to-PDF export is a separate archival feature. Do not add accounts, email recovery, cross-device ownership/editing, permanent hosted retention, recommendations, expenses, packing, social features, booking, or automatic replanning unless the user explicitly asks.
 
 ## Roadmap and change gates
 
@@ -41,13 +41,14 @@ V0    Understand + Trust
       -> deterministic validation -> evidence-backed Review
       -> Confirmed CanonicalTrip -> External Markdown Benchmark #001 gate
 
-V0.1  Deliver
+V0.2  Spreadsheet Travel Table (implemented before Hosted Delivery)
+      narrow XLSX/CSV extraction, up to 19 visible sheets
+      -> the same Draft / Review / Canonical pipeline
+      -> three-layout live acceptance gate; XLS remains unaccepted
+
+V0.1  Deliver (still gated by External Markdown Benchmark #001)
       CanonicalTrip -> PublishedTripSnapshot
       -> TripPublication -> read-only unlisted Viewer
-
-V0.2  Spreadsheet Travel Table
-      narrow XLSX/XLS/CSV extraction, up to 19 visible sheets
-      -> the same Draft / Review / Canonical pipeline
 
 Later Advanced spreadsheets and structured/visual sources
 
@@ -112,9 +113,10 @@ application workflow ownership, stage/overall watchdogs, visible
 and explicit Golden sample routing. Local test evidence is recorded in
 `openspec/changes/archive/2026-09-07-harden-source-to-render-boundaries/validation.md`; this is not
 a deployment claim. Exact `gemini-3.5-flash` remains historical failed benchmark
-evidence. Official model research selected exact stable `gemini-3.8-flash` as
-the next candidate, but its generated-schema, deterministic-fixture and
-key-backed live External Markdown Benchmark #001 gates must be rerun.
+evidence. On 2026-10-07 the user explicitly chose to retain exact
+`gemini-3.5-flash` after reporting `gemini-3.8-flash` rate limiting/instability.
+The generated-schema, deterministic-fixture and key-backed live External
+Markdown Benchmark #001 gates must be rerun for the current response-v2 pipeline.
 Production has no accepted no-override default, and Hosted Delivery remains gated.
 
 The active implementation/acceptance owner is `complete-faithful-markdown-journey`.
@@ -129,6 +131,8 @@ tasks 4.9–4.13; those contract corrections are not yet shipped implementation.
 Source-absent facts require no invention or compulsory completion; supported
 unknowns and ambiguous expressions must remain readable through confirmation
 and reload. Structural invalidity and genuine conflicts still require validation.
+
+The local spreadsheet implementation owner is `add-spreadsheet-intake-and-result-clarity`; read its `handoff.md` and `validation.md`. SheetJS CE 0.20.3 is pinned to the official tarball and stays inside the adapter, dynamically loaded for spreadsheet work. The shared prepared-source retry prerequisite belongs to `complete-faithful-markdown-journey` task 4.10. Source/schema/unit/UI checks and local workbook extraction are not live semantic acceptance; supported-format guidance remains gated. New interpretation requests use `semantic-interpretation-result.v2` with locally expanded range coverage; historical v1 evidence remains historical. Canonical writes use v3 with supporting groups and explicit v1/v2 decoding.
 
 Sample #23 is `External Markdown Benchmark #001` and is the current Markdown acceptance fixture.
 
@@ -199,7 +203,7 @@ the same CSS property in both `className` and `sx` on one element.
 - V0 uses one Gemini adapter behind the provider-neutral `parseTrip(request)` contract and the same ParsedTripDraft schema, deterministic validation, Review, and CanonicalTrip confirmation path. Other providers/models are later optimization scope. Do not add a plugin system or speculative provider registry.
 - The Gemini credential persists browser-locally, survives reload on the same browser/device, and has an explicit clear action. Do not store it as plaintext in `localStorage`, sync it, or send it to hosted storage.
 - Gemini requests use the `x-goog-api-key` header; API keys MUST NOT appear in URLs. Provider/model selection and response metadata MUST NOT enter CanonicalTrip or persisted trip data.
-- Exact `gemini-3.8-flash` is the selected stable V0 default candidate. Production remains without an accepted default until that exact model passes the generated-schema checks, deterministic parser fixtures, and live External Markdown Benchmark #001. After acceptance, use the exact stable ID rather than a moving alias. Changing the model requires rerunning the same gates; do not silently fall back to another model.
+- Exact `gemini-3.5-flash` is the user-selected V0 default candidate (2026-10-07). Production remains without an accepted default until that exact model passes the generated-schema checks, deterministic parser fixtures, and live External Markdown Benchmark #001. After acceptance, use the exact selected ID rather than a moving alias. Changing the model requires rerunning the same gates; do not silently fall back to another model.
 - The application workflow, not the modal component or Gemini adapter, owns candidate progress and terminal state. Reading, extraction, source validation, provider work, and local response validation must have configured application-level stage/overall deadlines in addition to the provider attempt deadline.
 - While processing, accidental Escape/backdrop dismissal may remain disabled, but the blocking modal must expose an explicit `停止這次判讀` action. Success, insufficient, failure, timeout, and stop must all clear timers, close the modal, preserve the selected source where technically possible, and leave the current confirmed trip readable. Late results from inactive session/request identities are ignored.
 - V0 may import a valid Canonical JSON file, but it does not provide Canonical JSON export. Browser-local API keys do not sync; each browser/device requires its own explicitly supplied key.

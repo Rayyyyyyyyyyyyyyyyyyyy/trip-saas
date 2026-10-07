@@ -1,13 +1,17 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import type { UnifiedSourceDocument } from "../../src/domain/source/types";
-import { validParsedTripDraft } from "../fixtures/contracts/validContracts";
+import {
+  validCanonicalTrip,
+  validParsedTripDraft,
+} from "../fixtures/contracts/validContracts";
 
 async function configureMockGemini(
   page: Page,
   options: {
     mode?: "clear" | "conflict" | "unsupported_clock";
     unknownDates?: boolean;
+    ranges?: "valid" | "overlap";
   } = {},
 ) {
   const mode = options.mode ?? "conflict";
@@ -55,7 +59,7 @@ async function configureMockGemini(
         };
       }
       const interpretation = {
-        schema_version: "semantic-interpretation-result.v1",
+        schema_version: "semantic-interpretation-result.v2",
         source_schema_version: source.schema_version,
         source_id: source.source_id,
         status: "draft",
@@ -76,10 +80,27 @@ async function configureMockGemini(
             : [],
         coverage: {
           total_blocks: source.evidence_units.length,
-          block_dispositions: source.evidence_units.map((unit, index) => ({
+          block_dispositions: (options.ranges
+            ? source.evidence_units.slice(0, 1)
+            : source.evidence_units
+          ).map((unit, index) => ({
             source_ref: unit.id,
             disposition: index === 0 ? "interpreted" : "supporting",
           })),
+          ...(options.ranges
+            ? {
+                block_disposition_ranges: [
+                  {
+                    from_id:
+                      source.evidence_units[
+                        options.ranges === "overlap" ? 0 : 1
+                      ]!.id,
+                    to_id: source.evidence_units.at(-1)!.id,
+                    disposition: "supporting",
+                  },
+                ],
+              }
+            : {}),
           unparsed_items: [],
         },
       };
@@ -188,7 +209,7 @@ function expectSensitiveSessionStateAbsent(snapshot: string) {
     "browser-test-key",
     "# Browser Review Trip",
     "10:30 Arrive at Osaka",
-    "semantic-interpretation-result.v1",
+    "semantic-interpretation-result.v2",
     "source-block:",
   ]) {
     expect(snapshot).not.toContain(forbidden);
@@ -242,7 +263,7 @@ test("Review keeps mobile/desktop correction parity and commits only after confi
   await expect(uploadSurface).toBeVisible();
 
   await page.getByRole("button", { name: /支援格式與資料安全/ }).click();
-  await expect(page.getByText(/Excel／CSV 要等 Markdown/)).toBeVisible();
+  await expect(page.getByText(/Excel／CSV 匯入仍在驗收中/)).toBeVisible();
   await expect(page.getByText(/PDF 目前不支援匯入/)).toBeVisible();
   expect(
     await page.evaluate(
@@ -457,7 +478,7 @@ test("Review conservatively downgrades unsupported clock precision and persists 
   const storage = await durableStorageText(page);
   expect(storage).not.toContain("adjustment:unsupported-clock");
   expect(storage).not.toContain("AMBIGUOUS_CLOCK_PRECISION_INFERRED");
-  expect(storage).not.toContain("semantic-interpretation-result.v1");
+  expect(storage).not.toContain("semantic-interpretation-result.v2");
   expect(storage).not.toContain('"start":"06:30"');
   expect(errors).toEqual([]);
 });
@@ -465,7 +486,7 @@ test("Review conservatively downgrades unsupported clock precision and persists 
 test("Review confirms a zero-blocker candidate without requiring full-document inspection", async ({
   page,
 }) => {
-  await configureMockGemini(page, { mode: "clear" });
+  await configureMockGemini(page, { mode: "clear", ranges: "valid" });
   await page.goto("/");
   await page
     .getByRole("textbox", { name: "Gemini API key" })
@@ -487,4 +508,73 @@ test("Review confirms a zero-blocker candidate without requiring full-document i
   await expect(
     page.getByRole("heading", { level: 1, name: "Browser Review Trip" }),
   ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Browser Review Trip" }),
+  ).toBeVisible();
+  const storage = await durableStorageText(page);
+  expectSensitiveSessionStateAbsent(storage);
+  expect(storage).not.toContain("block_disposition_ranges");
+});
+
+test("overlapping range coverage exits processing, preserves the selected source and confirmed trip", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  await configureMockGemini(page, { mode: "clear", ranges: "overlap" });
+  await page.goto("/");
+  const existing = structuredClone(validCanonicalTrip);
+  existing.title = "Existing confirmed trip";
+  await page.getByText("從 JSON 匯入完整行程").click();
+  await page.locator('input[accept*="application/json"]').setInputFiles({
+    name: "existing.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(existing)),
+  });
+  await expect(
+    page.getByRole("heading", { level: 1, name: existing.title }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "首頁", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Gemini API key" })
+    .fill("browser-test-key");
+  await page.getByRole("button", { name: "儲存在這個瀏覽器" }).click();
+  await expect(page.getByText(/API key 已加密保存在這個瀏覽器/)).toBeVisible();
+  const markdown = "# Browser Review Trip\n\n- 10:30 Arrive at Osaka";
+  await page.getByRole("tab", { name: "直接貼上" }).click();
+  await page
+    .getByRole("textbox", { name: "貼上 Markdown 行程內容" })
+    .fill(markdown);
+  await page.getByRole("button", { name: "送給 Gemini 判讀" }).click();
+  const notice = page.getByRole("alert");
+  await expect(notice).toContainText("判讀結果沒有完整對應這份來源");
+  await expect(notice).toBeFocused();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    page.getByRole("textbox", { name: "貼上 Markdown 行程內容" }),
+  ).toHaveValue(markdown);
+  await expect(
+    page.getByRole("button", { name: "重新送出這份行程" }),
+  ).toBeVisible();
+  const storage = await durableStorageText(page);
+  expect(storage).not.toContain("block_disposition_ranges");
+  expect(storage).not.toContain("semantic-interpretation-result.v2");
+  await page.getByRole("button", { name: "回到目前行程" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: existing.title }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { level: 1, name: existing.title }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > innerWidth,
+    ),
+  ).toBe(false);
+  expect(errors).toEqual([]);
 });

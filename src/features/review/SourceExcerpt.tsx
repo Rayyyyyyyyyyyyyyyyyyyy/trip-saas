@@ -2,6 +2,11 @@ import { Typography } from "@mui/material";
 
 import { EditorialFrame } from "../../components/editorial/EditorialPrimitives";
 import type { ReviewEvidenceItem } from "../../domain/source/reviewEvidence";
+import {
+  groupTabularExcerpts,
+  TabularMiniGrid,
+  type TabularExcerpt,
+} from "./TabularMiniGrid";
 
 // Review renders the fixed evidence grammar and nothing else. It never reads
 // the source document, evidence units, Markdown nodes, or workbook objects, so
@@ -70,14 +75,32 @@ function EvidenceItem({ item }: { item: ReviewEvidenceItem }) {
 }
 
 export function SourceExcerpt({ items }: { items: ReviewEvidenceItem[] }) {
+  const display: Array<ReviewEvidenceItem | TabularExcerpt[]> = [];
+  let tabular: TabularExcerpt[] = [];
+  const flush = () => {
+    display.push(...groupTabularExcerpts(tabular));
+    tabular = [];
+  };
+  for (const item of items) {
+    if (item.kind === "tabular_excerpt") tabular.push(item);
+    else {
+      flush();
+      display.push(item);
+    }
+  }
+  flush();
   return (
-    <div className="space-y-2" aria-label="來源證據">
-      {items.map((item, index) => (
-        <EvidenceItem
-          item={item}
-          key={`${item.kind}:${"source_ref" in item ? item.source_ref : "user"}:${index}`}
-        />
-      ))}
+    <div className="min-w-0 space-y-2" aria-label="來源證據">
+      {display.map((item, index) =>
+        Array.isArray(item) ? (
+          <TabularMiniGrid items={item} key={`grid:${index}`} />
+        ) : (
+          <EvidenceItem
+            item={item}
+            key={`${item.kind}:${"source_ref" in item ? item.source_ref : "user"}:${index}`}
+          />
+        ),
+      )}
     </div>
   );
 }

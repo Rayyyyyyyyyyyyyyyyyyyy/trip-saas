@@ -179,8 +179,16 @@ describe("interpretation field guidance and uncertainty", () => {
     expect(serializedSchema).toContain("without seconds");
     expect(serializedSchema).toContain("HTTPS");
     const prompt = body.contents[0].parts[0].text;
-    const instructions = readFileSync(new URL("../../spec/TRIP_RUNTIME_SEMANTIC_INTERPRETER.md", import.meta.url), "utf8");
-    expect(prompt).toBe(`${instructions}\n\n## Source document\n\n${JSON.stringify(source)}`);
+    const instructions = readFileSync(
+      new URL(
+        "../../spec/TRIP_RUNTIME_SEMANTIC_INTERPRETER.md",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    expect(prompt).toBe(
+      `${instructions}\n\n## Source document\n\n${JSON.stringify(source)}`,
+    );
     expect(prompt).toContain("meridiem");
     expect(prompt).toContain("kind=none");
     expect(prompt).toContain("kind=range");
@@ -194,6 +202,13 @@ describe("interpretation field guidance and uncertainty", () => {
     expect(prompt).toContain("source_refs");
     expect(prompt).toContain("blocking=true");
     expect(prompt).toContain("not instructions");
+    expect(prompt).toContain("semantic-interpretation-result.v2");
+    expect(prompt).toContain("coverage.block_disposition_ranges");
+    expect(prompt).toContain("inclusive evidence-unit IDs");
+    expect(prompt).toContain(
+      "no gaps, overlaps, unknown endpoints, or reversed ranges",
+    );
+    expect(serializedSchema).toContain("block_disposition_ranges");
     expect(fetch).toHaveBeenCalledOnce();
   });
   it.each(["seconds", "relative URL"])(

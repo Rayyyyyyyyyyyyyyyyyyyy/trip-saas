@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trip-runtime.local/schemas/semantic-interpretation-result.v2.schema.json",
+  "title": "SemanticInterpretationResult v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_schema_version",
+    "source_id",
+    "status",
+    "draft",
+    "findings",
+    "coverage"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "semantic-interpretation-result.v2"
+    },
+    "source_schema_version": {
+      "const": "unified-source-document.v1"
+    },
+    "source_id": {
+      "$ref": "#/$defs/stableId"
+    },
+    "status": {
+      "enum": ["draft", "insufficient"]
+    },
+    "draft": {
+      "description": "Complete ParsedTripDraft for status=draft, otherwise null for status=insufficient. Uncertain fields and missing optional assets belong in a reviewable draft when minimum trip structure is supported."
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "https://trip-runtime.local/schemas/parsed-trip-draft.v1.schema.json#/$defs/finding"
+      }
+    },
+    "coverage": {
+      "$ref": "#/$defs/coverage"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "status": {
+          "const": "draft"
+        },
+        "draft": {
+          "$ref": "https://trip-runtime.local/schemas/parsed-trip-draft.v1.schema.json"
+        }
+      }
+    },
+    {
+      "properties": {
+        "status": {
+          "const": "insufficient"
+        },
+        "draft": {
+          "type": "null"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "stableId": {
+      "description": "Stable ID: begin with an ASCII letter or digit; use only ASCII letters, digits, dot, underscore, colon and hyphen. Preserve supplied source/evidence IDs exactly; reuse entity IDs consistently in references. Use at least 1 character. Use at most 128 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "blockDisposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_ref", "disposition"],
+      "properties": {
+        "source_ref": {
+          "$ref": "#/$defs/stableId"
+        },
+        "disposition": {
+          "enum": ["interpreted", "supporting", "unparsed"]
+        }
+      }
+    },
+    "unparsedItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_ref",
+        "locator",
+        "reason_code",
+        "severity",
+        "message"
+      ],
+      "properties": {
+        "source_ref": {
+          "$ref": "#/$defs/stableId"
+        },
+        "locator": {
+          "description": "Use at least 1 character.",
+          "type": "string",
+          "minLength": 1
+        },
+        "reason_code": {
+          "description": "Reason code containing only lowercase ASCII letters, digits and underscores. Use at least 1 character.",
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "severity": {
+          "enum": ["error", "warning", "review", "info"]
+        },
+        "message": {
+          "description": "Use at least 1 character.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_blocks", "block_dispositions", "unparsed_items"],
+      "properties": {
+        "total_blocks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "block_dispositions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/blockDisposition"
+          }
+        },
+        "unparsed_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/unparsedItem"
+          }
+        },
+        "block_disposition_ranges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/blockDispositionRange"
+          }
+        }
+      }
+    },
+    "blockDispositionRange": {
+      "description": "Inclusive contiguous range in validated evidence-unit document order. Use only interpreted or supporting; every unparsed unit needs an individual disposition and reason. Do not overlap ranges or individual dispositions.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from_id", "to_id", "disposition"],
+      "properties": {
+        "from_id": {
+          "$ref": "#/$defs/stableId"
+        },
+        "to_id": {
+          "$ref": "#/$defs/stableId"
+        },
+        "disposition": {
+          "enum": ["interpreted", "supporting"]
+        }
+      }
+    }
+  }
+}

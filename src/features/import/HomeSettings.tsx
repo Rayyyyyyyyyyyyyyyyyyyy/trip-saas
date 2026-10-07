@@ -114,9 +114,10 @@ export function HomeSettings({
               目前可以上傳或貼上 Markdown，也可以直接匯入 CanonicalTrip JSON。
             </Typography>
             <Typography>
-              Excel／CSV 要等 Markdown 的外部測試通過後才會開放。PDF
-              目前不支援匯入。
+              Excel／CSV 匯入仍在驗收中，外部測試通過後才會列為支援格式。PDF
+              目前不支援匯入；圖片、截圖與 DOCX 也不支援。
             </Typography>
+            <Typography>來源中的內嵌圖片與 Markdown 附件不會匯入。</Typography>
             <Typography>
               使用免費版 Gemini API 時，Google
               可能會用你送出的內容與回應改善產品；付費版適用不同規則。若行程含有敏感或機密資訊，送出前請先確認自己方案的資料使用條款。{" "}

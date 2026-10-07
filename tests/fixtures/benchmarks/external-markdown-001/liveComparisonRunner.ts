@@ -516,6 +516,7 @@ export type LiveComparisonArtifact = {
 const FAILURE_PHASES: Record<ParseTripFailureCode, SafeFailure["phase"]> = {
   aborted: "request",
   authentication_failed: "credential",
+  coverage_invalid: "response_validation",
   draft_not_reviewable: "review_gate",
   invalid_response: "response_validation",
   malformed_response: "response_validation",

@@ -1,5 +1,3 @@
-import type { TextSourceInput } from "../trip/types";
-
 /**
  * Source-neutral document contract shared by every Source Adapter.
  *
@@ -39,10 +37,9 @@ export type MarkdownStructuralEvidence = {
 };
 
 /**
- * Dormant tabular variant. It fixes the seam Spreadsheet V0.2 will consume —
+ * Tabular structural evidence consumed by the Spreadsheet Source Adapter —
  * sheet identity/order, region locator, row/column position, merge and header
- * relationships, cached value, formula, and hyperlink evidence — without
- * enabling XLSX/XLS/CSV intake in this change.
+ * relationships, cached value, formula, and hyperlink evidence.
  */
 export type TabularStructuralEvidence = {
   evidence_kind: "tabular_region";
@@ -58,6 +55,10 @@ export type TabularStructuralEvidence = {
   cached_display_value?: string;
   formula?: string;
   hyperlink_target?: string;
+  typed_hint?:
+    | { kind: "number"; value: number }
+    | { kind: "boolean"; value: boolean }
+    | { kind: "date_serial"; value: number; date_system: "1900" | "1904" };
 };
 
 export type SourceStructuralEvidence =
@@ -75,7 +76,11 @@ export type SourceEvidenceUnit = {
 };
 
 export type SourceExtractionFinding = {
-  code: "MISSING_RELATIVE_ASSET";
+  code:
+    | "MISSING_RELATIVE_ASSET"
+    | "MISSING_CACHED_VALUE"
+    | "CACHED_VALUE_ERROR"
+    | "COVERED_CELL_CONTENT";
   severity: "warning" | "error";
   message: string;
   evidence_unit_ref: string;
@@ -87,10 +92,13 @@ export type UnifiedSourceDocument = {
   schema_version: "unified-source-document.v1";
   source_id: string;
   display_name: string;
-  input_mode: TextSourceInput["input_mode"];
+  input_mode:
+    "markdown_file" | "pasted_markdown" | "spreadsheet_file" | "csv_file";
   source_format: SourceFormat;
   evidence_units: SourceEvidenceUnit[];
   extraction_findings: SourceExtractionFinding[];
+  /** User-excluded visible sheets only. Hidden sheets are never included. */
+  excluded_sheets?: string[];
 };
 
 declare const validatedSourceDocument: unique symbol;

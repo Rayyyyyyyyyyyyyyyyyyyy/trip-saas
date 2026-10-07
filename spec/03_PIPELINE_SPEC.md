@@ -90,7 +90,7 @@ Output:
 versioned `SemanticInterpretationResult`, containing either a reviewable `ParsedTripDraft` or an explicit insufficient result.
 Generalized Product V0 implementation:
 - Gemini adapter only
-- exact `gemini-3.8-flash` is the selected stable default candidate and becomes
+- exact `gemini-3.5-flash` is the user-selected exact default candidate and becomes
   the production default only after its generated-schema, deterministic parser,
   and live External Markdown Benchmark #001 gates pass
 - other provider/model adapters are later optimization scope
@@ -105,15 +105,17 @@ Does not own:
 - user confirmation
 - presentation
 
-### Gemini V0 adapter decision (updated 2026-09-08)
+### Gemini V0 adapter decision (updated 2026-10-07)
+
+On 2026-10-07 the user explicitly chose to retain exact `gemini-3.5-flash` after reporting `gemini-3.8-flash` rate limiting/instability. Existing failed 3.5 results remain historical; the current response-v2 gates must be rerun. This selection does not activate the production default.
 
 Acceptance candidate:
 - provider: Gemini only
-- exact stable model ID: `gemini-3.8-flash`
+- exact user-selected model ID: `gemini-3.5-flash`
 - thinking level candidate: `medium`, subject to fixture-based latency/cost/quality
   comparison before pinning
 
-Relevant current platform constraints:
+Historical platform research constraints (2026-09-08; not newly verified for the user-selected model):
 - 1,048,576 input-token limit and 65,536 output-token limit
 - structured outputs supported, but only a subset of JSON Schema
 - very large or deeply nested provider schemas may be rejected
@@ -131,10 +133,10 @@ Required adapter behavior:
   Gemini-compatible structured-output projection for the API request
 - do not pin `latest`, preview, or experimental aliases for production
 - leave production without an accepted default until exact
-  `gemini-3.8-flash` passes the required live benchmark; every later default
+  `gemini-3.5-flash` passes the required live benchmark; every later default
   change reruns the same gates
 
-Official evidence:
+Historical official research sources (retained as research, not acceptance of `gemini-3.5-flash`):
 - https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash
 - https://ai.google.dev/gemini-api/docs/troubleshooting
 - https://ai.google.dev/gemini-api/docs/structured-output
@@ -172,7 +174,8 @@ duplicate those gates.
 Provider-neutral response envelope. Required minimum shape:
 ```json
 {
-  "schema_version": "...",
+  "schema_version": "semantic-interpretation-result.v2",
+  "source_schema_version": "unified-source-document.v1",
   "source_id": "...",
   "status": "draft | insufficient",
   "draft": null,
@@ -204,8 +207,7 @@ When `status = draft`, the required `ParsedTripDraft` schema must include:
 
 Required fields must be present even when the supported value is `null`, `none`, `unknown`, or an empty list. Source absence is not automatically a parse defect: for example, an intentionally untimed item uses time precision `none`. Missing required schema members are parser-contract failures; source facts that cannot be interpreted safely become structured findings/unparsed items instead of invented values.
 
-The frozen v1 response schema may retain serialized `total_blocks` /
-`block_dispositions` field names for benchmark compatibility. At the
+New requests use `semantic-interpretation-result.v2`, retaining serialized `total_blocks` / `block_dispositions` names. Optional `block_disposition_ranges` compress interpreted/supporting evidence using inclusive ordered IDs. Strict schema validation precedes bounded expansion; unknown/reversed endpoints, gaps and overlaps fail before response/fidelity/draft gates. Historical v1 responses remain historical benchmark evidence and cannot satisfy a new v2 request. At the
 source-neutral boundary those fields are derived from evidence-unit identities;
 they do not redefine all future evidence as Markdown blocks. Renaming the
 serialized fields requires an explicit schema migration and rerunning the model
@@ -216,7 +218,7 @@ and benchmark gates.
 The prose shape above is not the executable provider contract. Before any LLM
 provider or new source format is enabled, implementation must define and freeze
 two versioned JSON Schema artifacts:
-- `semantic-interpretation-result.v1.schema.json` for the complete provider
+- `semantic-interpretation-result.v2.schema.json` for the complete provider
   response envelope
 - `parsed-trip-draft.v1.schema.json` for the non-null `draft` payload
 
@@ -365,14 +367,14 @@ Must not contain:
 - UI-only styling
 - live runtime state
 
-The current write contract is `canonical-trip.v2`. The strict v1 contract
+The current write contract is `canonical-trip.v3`, adding required nullable `supporting_items[].group = { id, label, order } | null`. An explicit v2 decoder sets group to null without changing existing content or identities. Source-derived groups are assigned after response validation, flow through confirmation, and never include workbook/AST objects or UI disclosure state. The strict v1 contract
 remains accepted only through an explicit decoder: v1 user provenance migrates
 to `user`, while v1 source provenance migrates to `legacy_unavailable` because
 v1 did not retain a truthful source identity/locator. Migration preserves all
 trip/entity/checklist identities and content, validates the migrated value, and
 must not replace or delete the prior active record on failure.
 
-Canonical v2 permits `null` trip title, start/end date and timezone, nullable
+Canonical v3 retains v2 semantics and permits `null` trip title, start/end date and timezone, nullable
 Day date/labels/titles, null entity Day association, and nullable place facts.
 Entity title remains a required non-empty semantic identity. A valid trip needs
 at least one meaningful Day, entity, or supporting item; globally unique IDs,
@@ -380,7 +382,7 @@ unique Day source order, resolved references, valid relationships and valid
 known calendar/time values remain mandatory. Presentation-only labels such as
 `未命名行程`, `日期未定` and `當天行程` are never written back as facts.
 
-Canonical v2 entity provenance is a positive allowlist:
+Canonical v3 entity provenance is a positive allowlist:
 
 ```json
 {
@@ -456,7 +458,7 @@ Preserve enough content + structure to interpret intent correctly.
 
 Format-specific responsibilities:
 - Markdown preserves block order, hierarchy, links, and source locators.
-- XLSX/XLS extracts calculated/cached displayed cell values plus relevant sheet,
+- XLSX extracts calculated/cached displayed cell values plus relevant sheet,
   row, column, merge, source-order, formula, and hyperlink evidence into
   `UnifiedSourceDocument`; it does not infer itinerary meaning from cell
   position alone.
@@ -467,8 +469,13 @@ Format-specific responsibilities:
   different boundary.
 
 Initial spreadsheet source limits:
-- accepted extensions: `.xlsx`, `.xls`, `.csv`
+- experimental extensions: `.xlsx`, UTF-8 `.csv`; `.xls` stays rejected until its real-sample extraction acceptance
 - maximum 19 visible sheets, using Sample #19 as the evidence ceiling
+- original-order visible sheet selection defaults to all and requires at least one; normalized selected indices plus exact bytes form source identity, excluding filenames
+- excluded visible sheet names are metadata, not covered evidence; hidden sheets are absent from both
+- 128 MiB input, 50,000 evidence units and 20 MB serialized source document; no silent truncation
+- merge anchors retain bounds; independently populated covered cells retain their own contained evidence and warning
+- display text stays authoritative, including an empty display; auxiliary number/boolean/date-system hints cannot establish missing visible years
 - formula cells contribute their calculated/cached displayed value; a missing,
   stale, or error cached value produces an extraction finding rather than
   executing arbitrary workbook code
@@ -489,7 +496,11 @@ or merged region without carrying its headers/context. Every chunk retains
 sheet name, source order, cell ranges, merge/header context, and stable source
 references. Chunk results pass through deterministic reference checks and a
 global reconciliation step before Review; no chunk may confirm or render
-independently.
+independently. The current slice supports whole-sheet chunks: every request is preflighted before the first call, runs serially under one workflow signal/deadline, and undergoes strict local and global validation. A single over-budget sheet fails with a technical-limit reason and zero calls; region chunking remains contingent on acceptance evidence. Provider IDs/references are namespaced by source, only source-supported equal-date Days merge, conflicts remain visible, and an insufficient chunk makes the complete result insufficient. Clearing unsupported trip bounds retains the original partial-date source text.
+
+The application owns one session-only prepared-source cache for unchanged Markdown and spreadsheet retries. Retry reloads credentials and creates fresh session/request identities; file/paste/mode/selection edits, explicit clearing and inactive preparation invalidate reuse. Inspection and actual extraction run under their respective deadlines. Spreadsheet intake metadata never pretends to be a Markdown text input.
+
+Review receives bounded tabular excerpts with relative coordinates, sheet names, displayed text and locators. Sparse mini-grids expose row/column labels and gaps without dense worksheet allocation; long cells continue in bounded fragments, and mobile scrolling stays inside the grid. One image disclosure lists recorded references; absent embedded-image inventory must not become a fabricated zero count. Selected-scope coverage names excluded sheets and counts unparsed content.
 
 Successful spreadsheet extraction does not count as semantic parsing. The
 resulting `UnifiedSourceDocument` must be interpreted by Gemini through the

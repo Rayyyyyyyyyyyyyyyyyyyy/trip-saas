@@ -8,6 +8,7 @@ import type { SemanticInterpretationResult } from "../../domain/trip/types";
 import type { ReviewEvidenceProjection } from "../../domain/source/reviewEvidence";
 import { ReviewFindingList } from "./ReviewFindingList";
 import { deriveUnparsedItemFindings } from "./reviewCandidate";
+import { ReviewSourceSummary } from "./ReviewSourceSummary";
 
 export function InsufficientRecovery({
   evidence,
@@ -39,6 +40,10 @@ export function InsufficientRecovery({
         >
           目前還無法安全整理這份行程。
         </Typography>
+        <ReviewSourceSummary
+          evidence={evidence}
+          unparsedCount={interpretation.coverage.unparsed_items.length}
+        />
         <EditorialMarker className="py-2" role="alert" tone="attention">
           <Typography className="font-utility text-xs font-bold text-trip-attention">
             來源結構不足

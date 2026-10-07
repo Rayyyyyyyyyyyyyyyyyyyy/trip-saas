@@ -17,7 +17,7 @@ Own the application shell and the application workflow contracts. Feature and do
 
 - `useTripIntakeWorkflow` owns reading, extraction, source validation, credential loading, interpretation and output-validation progress. `tripProcessingRun` races every wait against cancellation and positive stage/overall deadlines, including dependencies that ignore their AbortSignal. Feature-local intake state retains only unsubmitted file/paste controls.
 - The processing modal derives from the workflow and exposes `停止這次判讀`. Success, insufficient, failure, timeout, stop and unmount release processing timers; inactive late results cannot enter another stage. Stop/failure preserve selected input and the confirmed trip. Successful confirmation, Canonical JSON import and explicit data clearing discard source controls.
-- Exact `gemini-3.8-flash` is the selected default candidate. The current production composition remains unset until that exact model passes the required live benchmark; no moving alias or silent fallback model is allowed.
+- Exact `gemini-3.5-flash` is the selected default candidate. The current production composition remains unset until that exact model passes the required live benchmark; no moving alias or silent fallback model is allowed.
 
 ## Composition boundary
 

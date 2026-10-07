@@ -109,3 +109,17 @@ owned here rather than in a parallel active change:
 Open implementation work is recorded in tasks 4.9–4.13. Documentation repair,
 strict validation and eventual implementation evidence are tracked by 7.4; no
 new checkbox is marked complete merely because the contracts were corrected.
+
+
+## 2026-10-01 shared prepared-source retry follow-up
+
+Task 4.10 was implemented as the shared prerequisite for `add-spreadsheet-intake-and-result-clarity` 5.2. One app-owned session-only prepared-source cache serves Markdown and honest spreadsheet metadata/document submissions. Unchanged downstream retries preserve input/source/evidence identities, use fresh session/request ownership and reload the credential. File/paste/mode/selection replacement, removal and explicit clearing invalidate reuse; pre-source-gate failure, stop, timeout and inactive late preparation cannot populate the cache. Actual prepared extraction and spreadsheet inspection have application extraction/reading deadlines respectively. Source metadata never fabricates a TextSourceInput.
+
+The 22 prepared-source/inspection component cases and 12 reducer cases pass. The separate spec review found no P1/P2 in this seam; local browser spreadsheet retry verifies an identical source document with unchanged selection, different identity after selection edits, active-trip protection and reload. Full integrated verification is recorded in the spreadsheet change’s `validation.md`. This checks 4.10 only: 4.9 and 4.11–4.13 retain their existing completion status and live/model gates remain unpassed. No production default, commit, push or deployment is claimed.
+
+
+## 2026-10-07 user-selected model follow-up
+
+The user explicitly chose to retain exact `gemini-3.5-flash`, superseding the previously researched 3.8 candidate after reporting rate limiting/instability. The acceptance candidate constant, ignored local development model configuration, benchmark examples and current product contracts now use exact 3.5. Production remains without an accepted no-override default; no live request/key read, model fallback, retry-bound increase, commit, push or deployment occurred. Historical failed 3.5 comparisons and prior 3.8 selection records above are retained without relabeling. Task 6.3a in the Markdown owner now requires new schema/parser/live evidence for exact 3.5 on response v2; it remains unchecked.
+
+The latest user rule prohibits browser verification without separate explicit authorization. This follow-up performs only non-browser tests/build/static checks; the October 1 browser evidence above is historical and is not a fresh verification claim.

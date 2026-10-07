@@ -24,6 +24,18 @@ _Avoid_: Adapter output, unchecked source JSON, ParsedTripDraft
 A stable source-neutral identity for one ordered unit of extracted source evidence. Its discriminated structural evidence may be Markdown- or tabular-specific without leaking adapter objects downstream.
 _Avoid_: Event, canonical entity, generic block
 
+**Selected-sheet Scope**:
+The normalized original-order visible worksheet selection included in source identity and expected evidence accounting. User-excluded sheets are named but are not counted as covered.
+_Avoid_: Whole-workbook understanding, hidden-sheet count
+
+**Range Disposition**:
+A response-v2 inclusive ordered evidence interval marked interpreted or supporting, expanded locally before response gates. Every evidence identity is still accounted for once.
+_Avoid_: Truncated source, semantic confidence, range of trip dates
+
+**Prepared Source**:
+The session-only validated source input/document retained by the application for unchanged-source retry, with fresh request ownership and credential loading.
+_Avoid_: Review candidate, candidate model, persisted upload
+
 **Semantic Interpreter**:
 The boundary that interprets travel intent, relations, uncertainty, and content roles from a `UnifiedSourceDocument`.
 _Avoid_: Whole parser, planner, renderer
@@ -43,6 +55,10 @@ _Avoid_: Generic error, AI note
 **Supporting Content**:
 Source material useful for trip execution or traceability that is not itself itinerary intent.
 _Avoid_: Noise, ignored content, event
+
+**Supporting Group**:
+An optional confirmed reference grouping with stable identity, exact source-derived label and source order. It is derived after response validation, not invented by the provider. Disclosure state belongs to presentation.
+_Avoid_: Event group, source-specific renderer
 
 **Review Evidence Projection**:
 The deterministic, bounded presentation of validated source references used by Review, such as text excerpts, tabular excerpts, asset references, missing references, or user-authored evidence.

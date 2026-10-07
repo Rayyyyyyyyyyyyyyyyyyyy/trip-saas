@@ -16,7 +16,10 @@ remain null, and provider output never supplies group labels or ids.
 
 ## Interpretation schema constraint guidance
 
-The v1 draft/result schemas remain the authoritative accepted-value contracts.
+The v1 draft and v2 result schemas are the authoritative accepted-value contracts.
+The historical v1 result schema remains unchanged, but new provider requests and
+local response gates require v2. Optional range coverage expands locally before
+the existing draft gate; `unparsed` always remains per-unit.
 Descriptions are generation guidance, not validation. Gemini projection retains
 those descriptions; the application interpreter owns travel-semantic instructions.
 No provider response is coerced or automatically repaired.

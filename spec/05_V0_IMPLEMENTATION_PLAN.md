@@ -1,7 +1,7 @@
 # Trip Runtime — V0 Implementation Plan
 
 > Status: Execution Plan  
-> Goal: Validate unfamiliar Markdown through the Understand + Trust pipeline before expanding delivery or source formats.
+> Goal: Validate unfamiliar Markdown through Understand + Trust; implement the approved narrow spreadsheet slice before delivery, with independent acceptance gates.
 
 ## 1. V0 objective
 
@@ -60,6 +60,7 @@ Current completion state is recorded in
 `openspec/changes/complete-faithful-markdown-journey/tasks.md`; do not duplicate
 task progress or dated implementation snapshots here. Its `handoff.md` maps the
 review findings and all open tasks from the three archived predecessor changes.
+The parallel narrow spreadsheet execution owner is `openspec/changes/add-spreadsheet-intake-and-result-clarity/tasks.md`; its handoff/validation files distinguish local extraction/UI verification from pending live acceptance. Prepared-source retry is shared with the Markdown owner’s task 4.10, rather than a separate spreadsheet cache.
 Those archives retain completed implementation evidence and unchecked tasks;
 archiving did not pass the external benchmark or activate a production model.
 
@@ -89,7 +90,7 @@ merely to recreate its previous baseline.
 - TypeScript internal types aligned with, but subordinate to, executable runtime schemas
 - versioned `TextSourceInput` schema shared by file and pasted input
 - executable, versioned provider-neutral
-  `semantic-interpretation-result.v1.schema.json`
+  `semantic-interpretation-result.v2.schema.json`
 - executable, versioned provider-neutral `parsed-trip-draft.v1.schema.json`
 - strict required fields, explicit nullability/enums, stable-reference rules,
   and rejection of unknown members
@@ -129,7 +130,7 @@ merely to recreate its previous baseline.
 - provider-neutral interface
 - implement one Gemini adapter for V0; other providers/models are later
   optimization scope
-- evaluate exact `gemini-3.8-flash` as the stable default candidate and activate
+- evaluate exact `gemini-3.5-flash` as the user-selected exact default candidate and activate
   it in production only after its generated-schema, deterministic parser, and
   live External Markdown Benchmark #001 gates pass
 - do not use a moving model alias or silently fall back to another model
@@ -246,7 +247,7 @@ merely to recreate its previous baseline.
 - reachable provider/settings, credentials, privacy, Canonical JSON import, and sample/fallback controls
 - existing-active-trip replacement success, failure, cancel, and stale-response paths
 - permanently pending reading/extraction/provider/validation stages terminate through the configured deadline or explicit stop action; no timer or late result reopens or advances the closed workflow
-- exact `gemini-3.8-flash` is not activated as the production default until the live benchmark gate passes, and no fallback model is invoked silently
+- exact `gemini-3.5-flash` is not activated as the production default until the live benchmark gate passes, and no fallback model is invoked silently
 - no horizontal overflow
 - minimum 44px mobile interaction targets
 - keyboard-operable primary controls and Date Rail
@@ -348,38 +349,40 @@ Post-Review recovery gate:
 9. Canonical persistence/import
 10. Non-overlapping Presentation Projection
 11. Overview / Day generalized rendering
-12. External Markdown Benchmark #001 against exact `gemini-3.8-flash`
+12. External Markdown Benchmark #001 against exact `gemini-3.5-flash`
 ```
 
-Only after step 12 passes:
+Approved implementation order after the shared local pipeline:
 
 ```text
-→ V0.1 Hosted Delivery
-→ V0.2 Narrow Spreadsheet Table
+→ V0.2 Narrow Spreadsheet Table preparation / experimental intake
+→ independent three-layout live spreadsheet acceptance
+→ V0.1 Hosted Delivery only after step 12 passes
 ```
+
+Spreadsheet implementation does not activate an accepted production model or pass the Markdown benchmark. Its supported-format guidance remains gated until all three spreadsheet layouts pass; no region chunking is added without evidence that a complete sheet exceeds budget.
 
 V0.2 spreadsheet work must separate deterministic workbook extraction from
 LLM semantic interpretation. The Source Adapter preserves cell values and
 relevant table structure; a configured provider API key is required before the
 resulting `UnifiedSourceDocument` can be interpreted.
 
-Spreadsheet input may not be enabled by UI copy alone. Before enabling it,
-fixtures must prove that Gemini can emit the frozen
+Experimental spreadsheet intake may be exercised after local source/schema/UI verification. It must not be declared supported by UI copy alone: before enabling supported-format guidance, the three live fixtures must prove that Gemini can emit the frozen
 `SemanticInterpretationResult` / `ParsedTripDraft` schemas and that invalid or
 incomplete output is rejected before Review.
 
 Initial Spreadsheet Travel Table fixture boundary:
-- `.xlsx`, `.xls`, `.csv`
-- maximum 19 visible sheets, based on Sample #19
+- `.xlsx`, UTF-8 `.csv`; `.xls` stays rejected until real-sample extraction acceptance
+- maximum 19 visible sheets, based on Sample #19; original-order visible selection defaults to all, requires one and is included in source identity
 - ignore hidden sheets
 - interpret calculated/cached displayed formula values and retain formulas only
   as source metadata
 - do not reject merely irregular layouts; technical extraction failure is
   `unsupported/failed`, while extracted-but-uninterpretable content returns
   schema-valid `insufficient`
-- token-budgeted sheet/used-region chunks preserve headers, merged regions, and
-  stable cell locators; all chunk results pass global reconciliation/reference
-  validation before Review
+- whole-sheet budget preflight precedes every provider call; single-sheet overflow fails explicitly until region chunking is evidenced; all chunk results pass global reconciliation/reference validation before Review
+- local acceptance fixtures are Busan (row-per-event), 澎湖 (calendar grid), 名古屋 (column-per-day); local-only runner reads ignored files in place and separates execution, pre-Review parser quality, Review recovery and human rubric assessment
+- TODO/missing annotations and unknown rubric metrics remain pending, never zero/pass; no live run without explicit authorization
 
 ## 10. Explicit non-goals
 
@@ -407,7 +410,7 @@ Completion evidence also requires:
 - invalid/unvalidated source documents are rejected before any provider call
 - every validated evidence unit has exactly one coverage disposition
 - permanently pending processing stages leave the modal through an application deadline or `停止這次判讀`, with timers cleared and the confirmed trip preserved
-- exact `gemini-3.8-flash` passes the generated-schema, deterministic parser, and live External Markdown Benchmark #001 gates before production-default activation
+- exact `gemini-3.5-flash` passes the generated-schema, deterministic parser, and live External Markdown Benchmark #001 gates before production-default activation
 - every Day entity has one primary placement and relationship groups preserve complete member semantics without duplicate full rendering
 
 Required engineering checks:

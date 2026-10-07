@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import type { PreparedSpreadsheetFile } from "./spreadsheetSourceAdapter";
 import type { TripIntakeWorkflow } from "../../app/useTripIntakeWorkflow";
 import { selectIsWorkflowBusy } from "../../app/tripWorkflowSelectors";
 import { createIntakeFailure, type IntakeFailure } from "./intakeFailure";
@@ -24,6 +25,20 @@ export function useMarkdownIntake(controller: TripIntakeWorkflow) {
   const [mode, setMode] = useState<IntakeMode>("file");
   const [paste, setPaste] = useState("");
   const [pasteTouched, setPasteTouched] = useState(false);
+  const [spreadsheet, setSpreadsheet] =
+    useState<PreparedSpreadsheetFile | null>(null);
+  const [selectedSheetIds, setSelectedSheetIds] = useState<string[]>([]);
+  const selectionGeneration = useRef(0);
+  const preparedIdentity = useRef<object>({});
+  const isSpreadsheet = file !== null && /\.(xlsx|csv)$/iu.test(file.name);
+  const inspect = async (next: File) => {
+    const generation = selectionGeneration.current;
+    const prepared = await controller.inspectSpreadsheetFile(next);
+    if (prepared && generation === selectionGeneration.current) {
+      setSpreadsheet(prepared);
+      setSelectedSheetIds(prepared.visibleSheets.map((sheet) => sheet.id));
+    }
+  };
   const { workflow } = controller;
   const isBusy = selectIsWorkflowBusy(workflow);
   const failure =
@@ -44,6 +59,9 @@ export function useMarkdownIntake(controller: TripIntakeWorkflow) {
     cancelled: "failed",
   };
   const reset = () => {
+    selectionGeneration.current += 1;
+    preparedIdentity.current = {};
+    controller.invalidatePreparedSource();
     controller.stop();
     if (workflow.candidate)
       controller.dispatch({
@@ -54,17 +72,34 @@ export function useMarkdownIntake(controller: TripIntakeWorkflow) {
   };
   return {
     file,
+    spreadsheet,
+    selectedSheetIds,
+    isSpreadsheet,
     mode,
     paste,
     pasteTouched,
     isBusy,
     isEmptyPaste: !paste.trim(),
     canStart:
-      !isBusy && (mode === "file" ? file !== null : Boolean(paste.trim())),
-    stage: stages[workflow.status] ?? "idle",
+      !isBusy &&
+      (mode === "file"
+        ? file !== null &&
+          (!isSpreadsheet ||
+            (spreadsheet !== null && selectedSheetIds.length > 0))
+        : Boolean(paste.trim())),
+    canRetry:
+      !isBusy &&
+      (mode === "file"
+        ? file !== null && (!spreadsheet || selectedSheetIds.length > 0)
+        : Boolean(paste.trim())),
+    stage:
+      workflow.status === "prepared" && !workflow.candidate?.document
+        ? ("idle" as const)
+        : (stages[workflow.status] ?? "idle"),
     failure,
     fallbackModel: controller.fallbackModel,
     canUseFallback:
+      !isSpreadsheet &&
       !isBusy &&
       failure?.code === "provider_unavailable" &&
       controller.fallbackModel !== null,
@@ -79,10 +114,30 @@ export function useMarkdownIntake(controller: TripIntakeWorkflow) {
     selectFile(next: File | null) {
       reset();
       setFile(next);
+      setSpreadsheet(null);
+      setSelectedSheetIds([]);
+      if (next && /\.(xlsx|csv)$/iu.test(next.name)) void inspect(next);
+    },
+    selectSheet(id: string, checked: boolean) {
+      if (
+        !spreadsheet ||
+        !spreadsheet.visibleSheets.some((sheet) => sheet.id === id)
+      )
+        return;
+      reset();
+      setSelectedSheetIds((previous) =>
+        spreadsheet.visibleSheets
+          .filter((sheet) =>
+            sheet.id === id ? checked : previous.includes(sheet.id),
+          )
+          .map((sheet) => sheet.id),
+      );
     },
     selectMode(next: IntakeMode) {
       reset();
       setMode(next);
+      if (next === "file" && file && isSpreadsheet && !spreadsheet)
+        void inspect(file);
     },
     changePaste(next: string) {
       reset();
@@ -98,6 +153,11 @@ export function useMarkdownIntake(controller: TripIntakeWorkflow) {
       setPasteTouched(true);
     },
     clearSelection() {
+      selectionGeneration.current += 1;
+      preparedIdentity.current = {};
+      controller.invalidatePreparedSource();
+      setSpreadsheet(null);
+      setSelectedSheetIds([]);
       setFile(null);
       setPaste("");
       setPasteTouched(false);
@@ -105,14 +165,48 @@ export function useMarkdownIntake(controller: TripIntakeWorkflow) {
     stop: controller.stop,
     async processSource() {
       if (mode === "file") {
-        if (file) await controller.submit({ mode, file });
+        if (!file) return;
+        if (isSpreadsheet) {
+          if (!spreadsheet) {
+            await inspect(file);
+            return;
+          }
+          if (!selectedSheetIds.length) return;
+          const selection = [...selectedSheetIds];
+          await controller.submit({
+            mode: "prepared",
+            identity: preparedIdentity.current,
+            async prepare(signal) {
+              if (signal.aborted) throw signal.reason;
+              const { extractSpreadsheetSource } =
+                await import("./spreadsheetSourceAdapter");
+              if (signal.aborted) throw signal.reason;
+              const document = await extractSpreadsheetSource(
+                spreadsheet,
+                selection,
+              );
+              if (signal.aborted) throw signal.reason;
+              return {
+                input: {
+                  source_id: document.source_id,
+                  display_name: spreadsheet.displayName,
+                  input_mode:
+                    spreadsheet.format === "csv"
+                      ? ("csv_file" as const)
+                      : ("spreadsheet_file" as const),
+                },
+                document,
+              };
+            },
+          });
+        } else await controller.submit({ mode, file });
       } else {
         setPasteTouched(true);
         await controller.submit({ mode, paste });
       }
     },
     async processSourceWithFallback() {
-      if (!controller.fallbackModel) return;
+      if (isSpreadsheet || !controller.fallbackModel) return;
       if (mode === "file") {
         if (file) await controller.submitWithFallback({ mode, file });
       } else {

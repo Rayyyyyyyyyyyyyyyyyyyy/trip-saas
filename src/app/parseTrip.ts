@@ -42,6 +42,7 @@ export type ParseTripRequest = {
 export type ParseTripFailureCode =
   | "aborted"
   | "authentication_failed"
+  | "coverage_invalid"
   | "draft_not_reviewable"
   | "invalid_response"
   | "malformed_response"

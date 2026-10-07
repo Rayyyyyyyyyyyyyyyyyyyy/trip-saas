@@ -92,7 +92,7 @@ export async function normalizeMarkdownFile(
   if (!hasMarkdownExtension(file.name)) {
     throw new SourceInputError(
       "unsupported_type",
-      "目前只支援 .md 或 .markdown。Excel／CSV 尚未開放，PDF 不支援匯入。",
+      "這個副檔名不支援匯入。Markdown 請使用 .md 或 .markdown，PDF、圖片、DOCX 與 .xls 不支援匯入。",
     );
   }
   if (

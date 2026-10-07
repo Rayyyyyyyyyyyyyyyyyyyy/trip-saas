@@ -100,3 +100,12 @@ production build, strict OpenSpec validation and `git diff --check` passed.
 - Netlify production configuration remains model-unset. New task 6.3a requires
   the complete schema, deterministic and authorized live comparison rerun before
   task 6.6 may activate a production default.
+
+
+## 2026-10-07 user-selected model follow-up
+
+The user explicitly chose to retain exact `gemini-3.5-flash`, superseding the previously researched 3.8 candidate after reporting rate limiting/instability. The acceptance candidate constant, ignored local development model configuration, benchmark examples and current product contracts now use exact 3.5. Production remains without an accepted no-override default; no live request/key read, model fallback, retry-bound increase, commit, push or deployment occurred. Historical failed 3.5 comparisons and prior 3.8 selection records above are retained without relabeling. Task 6.3a in the Markdown owner now requires new schema/parser/live evidence for exact 3.5 on response v2; it remains unchecked.
+
+The latest user rule prohibits browser verification without separate explicit authorization. This follow-up performs only non-browser tests/build/static checks; the October 1 browser evidence above is historical and is not a fresh verification claim.
+
+Fresh non-browser checks for this follow-up: 91 focused tests passed across Gemini transport/parser and both benchmark runners; `npm run build` passed (generated validators/typecheck included; existing chunk-size warning); both active changes passed strict OpenSpec validation; `git diff --check` passed. The mocked transport regression confirms both attempts after a 429 request exact `gemini-3.5-flash`, with no substitution. Local development configuration was checked as exact 3.5 without reading/printing credentials. No live provider or browser verification was run.

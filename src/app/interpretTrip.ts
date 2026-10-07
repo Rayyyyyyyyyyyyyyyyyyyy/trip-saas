@@ -12,9 +12,14 @@ import type {
   ValidatedUnifiedSourceDocument,
   UnifiedSourceDocument,
 } from "../domain/source/types";
-import { sourceExpectationFor } from "../domain/source/sourceCoverage";
+import {
+  expandSourceCoverage,
+  sourceExpectationFor,
+} from "../domain/source/sourceCoverage";
 import { validateUnifiedSourceDocument } from "../domain/source/validateUnifiedSourceDocument";
 import { validateInterpretationFidelity } from "../domain/source/validateInterpretationFidelity";
+import { chunkSourceBySheet } from "../domain/source/chunkSourceBySheet";
+import { reconcileInterpretationChunks } from "../domain/trip/reconcileInterpretationChunks";
 import { ParseTripError, type ParseTripRequest } from "./parseTrip";
 import type { InterpretationTransport } from "./interpretationTransport";
 
@@ -62,6 +67,15 @@ function validateProviderResult(
   }
   let result = value as SemanticInterpretationResult;
   const expectation = sourceExpectationFor(source);
+  const expanded = expandSourceCoverage(result.coverage, expectation.block_ids);
+  if (!expanded.valid) {
+    throw new ParseTripError(
+      "coverage_invalid",
+      "判讀結果沒有完整對應來源，因此沒有採用。",
+      expanded.findings,
+    );
+  }
+  result = { ...result, coverage: expanded.coverage };
   const gate = evaluateGateA(result, expectation);
   if (!gate.pass) {
     throw new ParseTripError(
@@ -150,17 +164,21 @@ export function createInterpretTrip(options: {
     const maxTokens =
       options.maxEstimatedInputTokens ??
       DEFAULT_INTERPRETATION_MAX_ESTIMATED_INPUT_TOKENS;
+    const validSizes = (envelope: typeof prepared) =>
+      Number.isFinite(envelope.requestBytes) &&
+      envelope.requestBytes >= 0 &&
+      Number.isFinite(envelope.estimatedInputTokens) &&
+      envelope.estimatedInputTokens >= 0;
+    const withinBudget = (envelope: typeof prepared) =>
+      validSizes(envelope) &&
+      envelope.requestBytes <= maxBytes &&
+      envelope.estimatedInputTokens <= maxTokens;
     if (
       !Number.isFinite(maxBytes) ||
       maxBytes < 0 ||
       !Number.isFinite(maxTokens) ||
       maxTokens < 0 ||
-      !Number.isFinite(prepared.requestBytes) ||
-      prepared.requestBytes < 0 ||
-      !Number.isFinite(prepared.estimatedInputTokens) ||
-      prepared.estimatedInputTokens < 0 ||
-      prepared.requestBytes > maxBytes ||
-      prepared.estimatedInputTokens > maxTokens
+      !validSizes(prepared)
     ) {
       return fail(
         new ParseTripError(
@@ -170,29 +188,109 @@ export function createInterpretTrip(options: {
         "preflight",
       );
     }
+    let work = [{ source: gate.document, prepared }];
+    if (!withinBudget(prepared)) {
+      const sheets = chunkSourceBySheet(gate.document);
+      if (sheets.length < 2)
+        return fail(
+          new ParseTripError(
+            "preflight_limit",
+            "這份來源超過判讀的安全請求上限，因此尚未送出。",
+          ),
+          "preflight",
+        );
+      work = [];
+      // Prepare every whole sheet before sending any. A single over-limit
+      // sheet must not consume calls and leave a partially interpreted trip.
+      for (const sheet of sheets) {
+        checkAbort(signal);
+        const chunkGate = validateUnifiedSourceDocument(sheet, {
+          source_id: sourceId,
+        });
+        if (!chunkGate.valid)
+          return fail(
+            new ParseTripError(
+              "source_document_invalid",
+              "來源分頁沒有通過結構檢查，因此沒有送出判讀。",
+            ),
+            "source",
+          );
+        let envelope: typeof prepared;
+        try {
+          envelope = options.transport.prepare(
+            createPrompt(chunkGate.document),
+          );
+        } catch {
+          return fail(
+            new ParseTripError(
+              "preflight_limit",
+              "無法安全建立這份來源的判讀請求，因此尚未送出。",
+            ),
+            "preflight",
+          );
+        }
+        if (!withinBudget(envelope))
+          return fail(
+            new ParseTripError(
+              "preflight_limit",
+              "單一工作表超過判讀的安全請求上限，因此尚未送出。",
+            ),
+            "preflight",
+          );
+        work.push({ source: chunkGate.document, prepared: envelope });
+      }
+    }
     onStage?.("interpreting");
     checkAbort(signal);
-    let value: unknown;
-    try {
-      value = await prepared.send({ credential, signal });
-    } catch (error) {
+    const outcomes: InterpretationOutcome[] = [];
+    for (const item of work) {
       checkAbort(signal);
-      if (error instanceof ParseTripError) throw error;
-      return fail(
-        new ParseTripError(
-          "provider_unreachable",
-          "無法完成判讀連線，請稍後重試。",
-        ),
-        "request",
-      );
+      let value: unknown;
+      try {
+        value = await item.prepared.send({ credential, signal });
+      } catch (error) {
+        checkAbort(signal);
+        if (error instanceof ParseTripError) throw error;
+        return fail(
+          new ParseTripError(
+            "provider_unreachable",
+            "無法完成判讀連線，請稍後重試。",
+          ),
+          "request",
+        );
+      }
+      checkAbort(signal);
+      // Keep one interpreting stage over the entire serial run. The existing
+      // application stage/overall watchdogs are never restarted per sheet.
+      if (work.length === 1) onStage?.("output_validation");
+      checkAbort(signal);
+      try {
+        outcomes.push(validateProviderResult(value, item.source));
+      } catch (error) {
+        if (error instanceof ParseTripError) return fail(error, "response");
+        return fail(
+          new ParseTripError(
+            "invalid_response",
+            "判讀回傳內容未通過本機檢查。",
+          ),
+          "response",
+        );
+      }
+      checkAbort(signal);
     }
-    checkAbort(signal);
+    if (work.length === 1) return outcomes[0]!;
     onStage?.("output_validation");
     checkAbort(signal);
+    let result: InterpretationOutcome;
     try {
-      const result = validateProviderResult(value, gate.document);
-      checkAbort(signal);
-      return result;
+      const reconciled = reconcileInterpretationChunks(outcomes, gate.document);
+      if (!reconciled.valid)
+        throw new ParseTripError(
+          "draft_not_reviewable",
+          "分頁判讀結果互相衝突，沒有建立部分行程。",
+          reconciled.findings,
+        );
+      result = validateProviderResult(reconciled.result, gate.document);
     } catch (error) {
       if (error instanceof ParseTripError) return fail(error, "response");
       return fail(
@@ -200,5 +298,7 @@ export function createInterpretTrip(options: {
         "response",
       );
     }
+    checkAbort(signal);
+    return result;
   };
 }

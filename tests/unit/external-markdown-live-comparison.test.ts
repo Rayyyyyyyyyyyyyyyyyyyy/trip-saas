@@ -33,7 +33,7 @@ function completeResult(
   blockIds: string[],
 ): SemanticInterpretationResult {
   return {
-    schema_version: "semantic-interpretation-result.v1",
+    schema_version: "semantic-interpretation-result.v2",
     source_schema_version: "unified-source-document.v1",
     source_id: sourceId,
     status: "insufficient",

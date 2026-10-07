@@ -74,20 +74,16 @@ describe("Home Markdown intake", () => {
     expect(trip.title).toBeNull();
   });
 
-  // The source schema declares a dormant tabular evidence variant. Home must
-  // keep offering Markdown only: no spreadsheet file selection and no copy
-  // implying spreadsheet support is available.
-  it("offers no spreadsheet intake while the tabular variant stays dormant", () => {
+  it("accepts experimental XLSX/CSV without declaring spreadsheet support or XLS", () => {
     const { container } = renderHome();
     const input = container.querySelector<HTMLInputElement>(
       'input[type="file"][accept*=".md"]',
     );
-
-    const accept = input?.getAttribute("accept") ?? "";
-    for (const spreadsheet of [".xlsx", ".xls", ".csv", "spreadsheetml"]) {
-      expect(accept).not.toContain(spreadsheet);
-    }
-    expect(container.textContent).not.toMatch(/試算表|Excel 匯入|上傳 CSV/);
+    const extensions = input?.getAttribute("accept")?.split(",") ?? [];
+    expect(extensions).toContain(".xlsx");
+    expect(extensions).toContain(".csv");
+    expect(extensions).not.toContain(".xls");
+    expect(container.textContent).not.toMatch(/支援.*\.xlsx|支援.*\.csv/);
   });
 
   it("distinguishes the empty upload target from a selected file", async () => {
@@ -450,7 +446,7 @@ describe("Home Markdown intake", () => {
       screen.getByRole("button", { name: /支援格式與資料安全/ }),
     );
     expect(screen.getByText(/Excel／CSV/)).toHaveTextContent(
-      "外部測試通過後才會開放",
+      "外部測試通過後才會列為支援格式",
     );
     expect(screen.getByText(/PDF 目前不支援匯入/)).toBeVisible();
     const terms = screen.getByRole("link", {
