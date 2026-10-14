@@ -1,5 +1,14 @@
 # Handoff — add-spreadsheet-intake-and-result-clarity
 
+2026-10-12 cross-owner follow-up: the Markdown owner's tasks 4.9 and 4.11–4.13
+are locally implemented and reviewed. Shared Review now uses source-linked
+partial-date/raw-clock checks and memory-only correction/deletion authority;
+explicit 12/24-hour context is respected. See
+`../complete-faithful-markdown-journey/handoff.md` and its `validation.md` for
+fresh checks and remaining acceptance gates. This does not pass spreadsheet
+three-layout live acceptance or supported-format declaration. No fresh browser,
+provider request, commit/push, main merge or deployment occurred in that slice.
+
 Updated 2026-10-07. The user explicitly authorized adding SheetJS and continuing implementation. SheetJS CE 0.20.3 is installed from the official tarball; Group 4 is implemented and reviewed. Group 5 and the local benchmark runner are implemented and reviewed. The active owner’s prepared-source retry task 4.10 is also complete. Final verification is recorded in validation.md. The user reports `gemini-3.8-flash` rate limiting/instability and on 2026-10-07 explicitly chose to retain exact `gemini-3.5-flash`; live gates remain open with no key read or live call. The user authorized commit and push on 2026-10-07 for `ft/spreadsheet-intake`. This implementation, model-selection follow-up and validation record are included in that submission; earlier no-commit/no-push statements describe their original evidence time.
 
 ## Where things stand

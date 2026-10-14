@@ -126,8 +126,12 @@ unknown-value confirmation, undated entity placement, Canonical semantic checks,
 minimal provenance compatibility, actual-entry CSP, fidelity assessment and
 Review/Result usefulness. These are planned corrections, not shipped behavior.
 Its 2026-09-09 follow-up section additionally owns the single-model path,
-prepared-source retry identity and candidate-aware Review gates through open
-tasks 4.9–4.13; those contract corrections are not yet shipped implementation.
+prepared-source retry identity and candidate-aware Review gates through tasks
+4.9–4.13. These corrections are locally implemented as of 2026-10-12, including
+source-linked partial-date/raw-clock checks, session-only user correction and
+deletion records, and bounded `12點`/clock-format context handling. This is not
+a deployment or live acceptance claim; fresh browser verification is not run
+under the user's no-browser rule. See its `validation.md` for current evidence.
 Source-absent facts require no invention or compulsory completion; supported
 unknowns and ambiguous expressions must remain readable through confirmation
 and reload. Structural invalidity and genuine conflicts still require validation.

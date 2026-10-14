@@ -52,21 +52,12 @@ function ConfirmedTripEntry({
 
 export function TripRuntimeApp() {
   const configuredGeminiModel = import.meta.env.VITE_GEMINI_MODEL?.trim();
-  const configuredFallbackModel = import.meta.env
-    .VITE_GEMINI_FALLBACK_MODEL?.trim();
-  const parsers = useMemo(
-    () => ({
-      primary: configuredGeminiModel
+  const parseTrip = useMemo(
+    () =>
+      configuredGeminiModel
         ? createGeminiTripParser({ model: configuredGeminiModel })
         : undefined,
-      fallback:
-        configuredGeminiModel &&
-        configuredFallbackModel &&
-        configuredFallbackModel !== configuredGeminiModel
-          ? createGeminiTripParser({ model: configuredFallbackModel })
-          : undefined,
-    }),
-    [configuredFallbackModel, configuredGeminiModel],
+    [configuredGeminiModel],
   );
 
   return (
@@ -75,10 +66,8 @@ export function TripRuntimeApp() {
         <CssBaseline />
         <TripRuntimeStartup
           credentialRepository={credentialRepository}
-          fallbackModel={configuredFallbackModel}
-          fallbackParseTrip={parsers.fallback}
           localDataOperations={localDataOperations}
-          parseTrip={parsers.primary}
+          parseTrip={parseTrip}
           repository={confirmedTripRepository}
           sampleTrip={goldenOsakaCanonicalTrip}
           renderViewer={(activeTrip, controls) => (

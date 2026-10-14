@@ -1,3 +1,4 @@
+import { recordReviewCorrection } from "../features/review/reviewPreservation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { CircularProgress, Stack, Typography } from "@mui/material";
 
@@ -5,7 +6,7 @@ import { createReviewEvidenceProjection } from "../domain/source/reviewEvidence"
 import type { CanonicalTrip } from "../domain/trip/types";
 import { confirmReviewedTrip } from "../features/review/confirmReviewedTrip";
 import { InsufficientRecovery } from "../features/review/InsufficientRecovery";
-import { deriveReviewFindings } from "../features/review/reviewCandidate";
+import { deriveReviewSessionFindings } from "../features/review/reviewCandidate";
 import { ReviewScreen } from "../features/review/ReviewScreen";
 import { Home } from "../features/import/Home";
 import { importCanonicalTripFile } from "../features/import/canonicalTripImport";
@@ -37,8 +38,6 @@ type StartupViewState =
 
 export type TripRuntimeStartupProps = {
   credentialRepository: GeminiCredentialRepository;
-  fallbackModel?: string;
-  fallbackParseTrip?: ParseTrip;
   localDataOperations: LocalDataOperations;
   repository: ConfirmedTripRepository;
   sampleTrip: CanonicalTrip;
@@ -64,8 +63,6 @@ const recoveryMessages: Record<NonNullable<HomeState["recovery"]>, string> = {
 
 export function TripRuntimeStartup({
   credentialRepository,
-  fallbackModel,
-  fallbackParseTrip,
   localDataOperations,
   repository,
   sampleTrip,
@@ -78,8 +75,6 @@ export function TripRuntimeStartup({
   const [homeRevision, setHomeRevision] = useState(0);
   const intakeWorkflow = useTripIntakeWorkflow({
     credentialRepository,
-    fallbackModel,
-    fallbackParseTrip,
     parseTrip,
     onSourcePrepared,
     processing,
@@ -120,27 +115,38 @@ export function TripRuntimeStartup({
     workflow.candidate.interpretation?.draft
   ) {
     const candidate = workflow.candidate;
+    const reviewEvidence = createReviewEvidenceProjection(candidate.document!);
     return (
       <ReviewScreen
         adjustments={candidate.adjustments}
         busy={workflow.status === "confirming"}
-        evidence={createReviewEvidenceProjection(candidate.document!)}
+        evidence={reviewEvidence}
+        corrections={candidate.corrections}
         draft={candidate.draft!}
         errorMessage={workflow.failure?.message ?? null}
         interpretation={candidate.interpretation!}
         originalDraft={candidate.interpretation!.draft!}
         onCancel={cancelCandidate}
-        onDraftChange={(draft) =>
+        onDraftChange={(draft, edit) => {
+          const corrections = recordReviewCorrection(
+            candidate.draft!,
+            draft,
+            candidate.corrections,
+            edit,
+          );
           dispatchWorkflow({
             type: "review_draft_changed",
             draft,
-            findings: deriveReviewFindings(
+            corrections,
+            findings: deriveReviewSessionFindings(
               draft,
-              candidate.interpretation?.findings ?? [],
+              candidate.interpretation!,
+              reviewEvidence,
+              corrections,
             ),
             sessionId: candidate.sessionId,
-          })
-        }
+          });
+        }}
         onConfirm={() => {
           dispatchWorkflow({
             type: "confirmation_started",
@@ -148,6 +154,11 @@ export function TripRuntimeStartup({
           });
           void confirmReviewedTrip(candidate.draft!, repository, {
             sourceId: candidate.interpretation?.source_id,
+            review: {
+              evidence: reviewEvidence,
+              interpretation: candidate.interpretation!,
+              corrections: candidate.corrections,
+            },
           })
             .then((trip) => {
               intake.clearSelection();

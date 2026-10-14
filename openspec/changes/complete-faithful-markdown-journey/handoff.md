@@ -123,3 +123,100 @@ The 22 prepared-source/inspection component cases and 12 reducer cases pass. The
 The user explicitly chose to retain exact `gemini-3.5-flash`, superseding the previously researched 3.8 candidate after reporting rate limiting/instability. The acceptance candidate constant, ignored local development model configuration, benchmark examples and current product contracts now use exact 3.5. Production remains without an accepted no-override default; no live request/key read, model fallback, retry-bound increase, commit, push or deployment occurred. Historical failed 3.5 comparisons and prior 3.8 selection records above are retained without relabeling. Task 6.3a in the Markdown owner now requires new schema/parser/live evidence for exact 3.5 on response v2; it remains unchecked.
 
 The latest user rule prohibits browser verification without separate explicit authorization. This follow-up performs only non-browser tests/build/static checks; the October 1 browser evidence above is historical and is not a fresh verification claim.
+
+## 2026-10-12 user-requested pause checkpoint
+
+The user asked to pause at a checkpoint during implementation of 4.9 and
+4.11–4.13. Stop here; do not resume implementation or acceptance work until the
+user resumes it. Changes are saved in the working tree on `ft/spreadsheet-intake`,
+based on pushed commit `14afe05`; this follow-up has not been committed or pushed.
+
+Implemented but not accepted as a complete slice:
+
+- 4.9: removed alternate-model environment/parser/controller/UI paths. Bounded
+  transport retries keep the configured model, and manual retry reuses the
+  prepared source with fresh request ownership and credentials. Its focused
+  tests and independent code review passed.
+- 4.11–4.12: added source-linked preservation predicates and a session-only
+  user-correction sidecar; application confirmation rechecks Review findings
+  before persistence. The sidecar does not enter CanonicalTrip or provider data.
+- 4.13: added source-evidenced clock detection, including `12點`, contextual
+  `12:30`, and explicit daypart handling. Two older fixtures were corrected to
+  contain the clock evidence their assertions require.
+
+Round-one independent Standards/Spec review found four open P2 issues. These
+are the first work on resume; do not relax source checks or mark the slice done:
+
+1. `reviewPreservation.ts`: a shared source paragraph containing two partial
+   dates requires each individual Day label to preserve both dates. Aggregate
+   faithful retained text within the shared source scope instead; regress with
+   `8/16 京都，8/17 大阪` split into two unknown-year Days.
+2. `clockExpression.ts`: explicit 24/12-hour context must take precedence over
+   marker and zero-padding heuristics. Regress `24 小時制：12點集合` as unambiguous
+   and `12-hour clock: 06:30集合，AM/PM未註明` as ambiguous.
+3. Review has no editable `Day.label` or `time.raw_text` repair path even though
+   the new gate requires them. Add a bounded source-backed repair action/input;
+   a user must not need to invent a year to recover a missing partial-date label.
+4. Explicit deletion of a misidentified entity leaves its provider clock
+   finding permanently blocking. Track the exact user-deleted entity ID in
+   session-only state and reconcile its obsolete finding; missing/forged scope
+   must remain blocking.
+
+Then run the second review round and final unit/component/build/strict checks,
+update the current Review documentation and completion evidence, and reconcile
+task checkboxes. Tasks 4.9/4.11/4.12/4.13/7.4 intentionally remain unchecked at
+this pause. Exact `gemini-3.5-flash` remains selected; no live provider call/key
+read, browser operation, production default activation, main merge or deployment
+occurred. Live/integrated/human acceptance and Hosted Delivery remain gated.
+
+See `validation.md` for the exact checkpoint verification and its limits.
+
+## 2026-10-12 resumed implementation closure
+
+The user resumed this checkpoint. Tasks 4.9 and 4.11–4.13 are now locally
+implemented and reviewed; 7.4 records their closure. The earlier pause section
+above is historical and no longer lists current open implementation defects.
+
+All four initial P2 findings are corrected: partial-date retention is aggregated
+within the same evidence unit; explicit 12/24-hour context precedes notation
+heuristics; Review exposes bounded Day-label/raw-clock repairs; trusted exact-ID
+deletion retires a removed entity's stale clock finding after validation.
+Round two also closed raw-only repair approving untouched precision and provider
+Trip-only scope excluding an invented Day year. Time correction authority is
+field-specific and requires actual edits; year checks cover all date-bearing
+targets related to the cited source and admit valid event scope. Generic
+acknowledgement and provider provenance cannot create correction authority.
+
+The 2026-09-09 eight follow-ups are accounted for here:
+
+| Follow-up | Current disposition |
+| --- | --- |
+| Competing implementation owner | This change remains the sole Markdown acceptance owner. |
+| Ambiguous candidate terminology | Prepared source / ParsedTripDraft / candidate model remain distinct. |
+| Missing-year code-only safety | 4.11 checks source scope, preserved partial dates and every related full date. |
+| Nonempty-clock code-only safety | 4.11 checks the actual cited clock token, raw preservation and absent precision. |
+| Stale finding after user correction | 4.12 uses session-only, field-specific corrections and exact-ID deletion; confirmation recomputes findings. |
+| Production-model evidence omitted | Exact 3.5 response-v2 schema/parser/live/integrated gates remain open in 6.3a–6.6. |
+| Unconditional 12:30 ambiguity | 4.13 keeps contextual 12:30, explicit-format priority and legal 24-hour/daypart negatives. |
+| Uncatalogued sample #26 | Existing 26-sample documentation is retained; PDF intake remains excluded. |
+
+Next work is acceptance, not an automatic model activation or main merge:
+6.3a exact `gemini-3.5-flash` current-pipeline live benchmark, 6.4 qualifying
+original through confirmed/reloaded Result, 6.5 human usability evidence, and
+6.6 conditional production-default activation. Spreadsheet three-layout live
+acceptance/support declaration remains with its existing owner. Fresh browser
+verification of these UI changes remains unperformed under the user's explicit
+no-browser rule; it requires separate authorization for mobile/desktop input,
+layout and console checks. No browser, provider request/key read, commit, push,
+main merge or deployment was performed in this resumed implementation.
+
+## 2026-10-14 commit checkpoint
+
+The user requested committing this completed local slice and a progress report.
+The implementation, regression tests and closure records above are included in
+the requested commit on `ft/spreadsheet-intake`. `npm run build` passed again
+on 2026-10-14, including generated validators/typecheck; the existing bundle-size
+warning remains. The 591 unit / 123 component counts remain the 2026-10-12
+verification, not new test runs. No push, main merge, deployment, live provider
+request or browser verification is included in this commit-only request. The
+remaining acceptance gates above remain open.

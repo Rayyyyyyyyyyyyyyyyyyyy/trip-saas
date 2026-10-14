@@ -1,3 +1,6 @@
+import { deriveReviewSessionFindings } from "./reviewCandidate";
+import type { ReviewFindingContext } from "./reviewPreservation";
+import type { SemanticInterpretationResult } from "../../domain/trip/types";
 import {
   buildCanonicalTrip,
   validateCanonicalTripAuthoritatively,
@@ -27,8 +30,27 @@ export class ReviewConfirmationError extends Error {
 export async function confirmReviewedTrip(
   draft: ParsedTripDraft,
   repository: ConfirmedTripRepository,
-  context: { sourceId?: string | null } = {},
+  context: {
+    sourceId?: string | null;
+    review?: ReviewFindingContext & {
+      interpretation: SemanticInterpretationResult;
+    };
+  } = {},
 ): Promise<CanonicalTrip> {
+  if (context.review) {
+    const findings = deriveReviewSessionFindings(
+      draft,
+      context.review.interpretation,
+      context.review.evidence,
+      context.review.corrections,
+    );
+    if (findings.some((finding) => finding.blocking))
+      throw new ReviewConfirmationError(
+        "candidate_invalid",
+        "行程還有需要修正的來源問題，尚未儲存。",
+        findings,
+      );
+  }
   let trip: CanonicalTrip;
   try {
     trip = buildCanonicalTrip(draft, context);

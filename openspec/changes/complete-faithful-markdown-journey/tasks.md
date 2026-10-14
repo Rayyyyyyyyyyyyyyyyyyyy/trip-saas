@@ -31,11 +31,11 @@
 - [x] 4.6 Replace generic acknowledgement for mechanically detectable unsupported values with candidate-changing resolution; prove an unchanged unsupported value cannot be acknowledged through confirmation while genuine external-knowledge decisions remain explicit and traceable.
 - [x] 4.7 Make Review exception-led: show compact trip/adjustment/blocker summaries by default, keep complete source-backed editors behind `查看完整校對內容`, and retain one explicit atomic-replacement confirmation action.
 - [x] 4.8 Verify zero-blocker, conservatively adjusted and genuine-conflict Review journeys on mobile and desktop, including keyboard/disclosure behavior, authoritative pre-persistence validation, active-trip protection and absence of Review/provider payloads in storage.
-- [ ] 4.9 Remove the fallback environment/model parser, controller projection and alternate-model retry action; prove every bounded transport retry keeps the same configured exact model and exhaustion remains recoverable.
+- [x] 4.9 Remove the fallback environment/model parser, controller projection and alternate-model retry action; prove every bounded transport retry keeps the same configured exact model and exhaustion remains recoverable.
 - [x] 4.10 Reuse the prepared `TextSourceInput` and validated `UnifiedSourceDocument` after downstream failure of unchanged Markdown, with stable source/evidence identities, fresh workflow ownership and invalidation on every selected-source change.
-- [ ] 4.11 Replace provider-code-only unblocking with source-linked candidate predicates that retain partial-date evidence and verbatim clock expressions; keep missing scope or contradictory precision blocking.
-- [ ] 4.12 Reconcile obsolete provider ambiguity findings after explicit user-authored corrections while rerunning authoritative checks; prove unsupported values cannot be acknowledged through confirmation.
-- [ ] 4.13 Extend the bounded Arabic-hour detector to evidenced `12點`; keep `12:30` contextual rather than unconditionally ambiguous and cover explicit-daypart plus legal 24-hour negatives.
+- [x] 4.11 Replace provider-code-only unblocking with source-linked candidate predicates that retain partial-date evidence and verbatim clock expressions; keep missing scope or contradictory precision blocking.
+- [x] 4.12 Reconcile obsolete provider ambiguity findings after explicit user-authored corrections while rerunning authoritative checks; prove unsupported values cannot be acknowledged through confirmation.
+- [x] 4.13 Extend the bounded Arabic-hour detector to evidenced `12點`; keep `12:30` contextual rather than unconditionally ambiguous and cover explicit-daypart plus legal 24-hour negatives.
 
 ## 5. Verify deployment and travel reliability
 
@@ -61,7 +61,7 @@
 - [x] 7.1 Reconcile the archived Gemini structured-interpretation and intake-failure capability records into main OpenSpec specs using current deep-interpreter ownership; preserve newer newspaper/source/workflow contracts and sync accepted successor deltas deliberately.
 - [x] 7.2 Reconcile remaining module ownership, history/status and Golden itinerary description drift in current documentation; mark prior completeness scoring and stale deployment/visual/model statements historical instead of rewriting original evidence.
 - [x] 7.3 Verify each requirement and all eight review categories have implementation/verification evidence, every inherited open task is accounted for, current links resolve, and strict OpenSpec validation passes before declaring this change complete.
-- [ ] 7.4 Record the 2026-09-09 two-axis follow-up findings and closure evidence in this sole active owner; do not create a parallel implementation/acceptance change.
+- [x] 7.4 Record the 2026-09-09 two-axis follow-up findings and closure evidence in this sole active owner; do not create a parallel implementation/acceptance change.
 
 These tasks begin unchecked. Creating this plan and archiving predecessor work
 does not implement any of them. The exact eight-task transfer and review mapping

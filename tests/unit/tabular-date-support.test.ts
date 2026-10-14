@@ -281,7 +281,7 @@ describe("visible tabular date support", () => {
 
 describe("format-appropriate fidelity checks", () => {
   it("does not apply linear Markdown Day regions to column-per-day tables, while keeping clock checks", () => {
-    const document = table(["8/16", "8/17", "參觀"]);
+    const document = table(["8/16", "8/17", "7:00 參觀"]);
     const second = document.evidence_units[1]!;
     const evidence = second.structural_evidence[0] as TabularStructuralEvidence;
     second.locator = "sheet:2026行程!B1";

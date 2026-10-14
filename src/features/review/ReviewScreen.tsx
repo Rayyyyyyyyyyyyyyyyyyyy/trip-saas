@@ -1,3 +1,4 @@
+import type { ReviewCorrection, ReviewEditTarget } from "./reviewPreservation";
 import { useMemo, useState } from "react";
 import {
   Button,
@@ -24,8 +25,7 @@ import type { ReviewEvidenceProjection } from "../../domain/source/reviewEvidenc
 import {
   addMissedEntity,
   deleteFalseEntity,
-  deriveReviewFindings,
-  deriveUnparsedItemFindings,
+  deriveReviewSessionFindings,
   editReviewDay,
   editReviewEntity,
   editReviewTrip,
@@ -102,6 +102,7 @@ const stateFlagLabels = {
 } as const;
 
 type ReviewScreenProps = {
+  corrections?: readonly ReviewCorrection[];
   adjustments: ReviewAdjustment[];
   busy?: boolean;
   evidence: ReviewEvidenceProjection;
@@ -110,7 +111,7 @@ type ReviewScreenProps = {
   interpretation: SemanticInterpretationResult;
   onCancel: () => void;
   onConfirm: () => void;
-  onDraftChange: (draft: ParsedTripDraft) => void;
+  onDraftChange: (draft: ParsedTripDraft, edit?: ReviewEditTarget) => void;
   originalDraft: ParsedTripDraft;
 };
 
@@ -133,14 +134,20 @@ function EntityEditor({
   evidence: ReviewEvidenceProjection;
   draft: ParsedTripDraft;
   entity: DraftEntity;
-  onDraftChange: (draft: ParsedTripDraft) => void;
+  onDraftChange: (draft: ParsedTripDraft, edit?: ReviewEditTarget) => void;
   originalDraft: ParsedTripDraft;
 }) {
   const original = originalDraft.entities.find((item) => item.id === entity.id);
   const edit = (
     field: ReviewEntityFieldPath,
     change: (candidate: DraftEntity) => void,
-  ) => onDraftChange(editReviewEntity(draft, entity.id, field, change));
+  ) =>
+    onDraftChange(
+      editReviewEntity(draft, entity.id, field, change),
+      field === "time" || field.startsWith("time.")
+        ? { kind: "entity", id: entity.id, field: "time" }
+        : undefined,
+    );
   const titleOriginal = originalValue(original, entity, "title");
   const semanticOriginal = originalValue(original, entity, "semantic_type");
 
@@ -254,6 +261,18 @@ function EntityEditor({
       )}
 
       <div className="grid gap-4 md:grid-cols-3">
+        <TextField
+          label="時間原文"
+          value={entity.time.raw_text ?? ""}
+          helperText="保留來源的時間說法；無法確定時不必補上精確時間。"
+          slotProps={{ htmlInput: { maxLength: 240 } }}
+          onChange={(event) =>
+            edit("time.raw_text", (candidate) => {
+              candidate.time.raw_text = event.target.value || null;
+            })
+          }
+          className="w-full"
+        />
         <TextField
           select
           label="時間精度"
@@ -372,6 +391,7 @@ function EntityEditor({
           onClick={() =>
             onDraftChange(
               revertEntityCorrection(draft, originalDraft, entity.id),
+              { kind: "revert_entity", id: entity.id },
             )
           }
         >
@@ -381,7 +401,12 @@ function EntityEditor({
           className="min-h-11"
           color="error"
           variant="text"
-          onClick={() => onDraftChange(deleteFalseEntity(draft, entity.id))}
+          onClick={() =>
+            onDraftChange(deleteFalseEntity(draft, entity.id), {
+              kind: "delete_entity",
+              id: entity.id,
+            })
+          }
         >
           刪除誤判內容
         </Button>
@@ -391,6 +416,7 @@ function EntityEditor({
 }
 
 export function ReviewScreen({
+  corrections = [],
   adjustments,
   busy = false,
   evidence,
@@ -403,31 +429,18 @@ export function ReviewScreen({
   originalDraft,
 }: ReviewScreenProps) {
   const [fullReviewOpen, setFullReviewOpen] = useState(false);
-  const materialFindings = useMemo(
-    () => [
-      ...interpretation.findings,
-      ...deriveUnparsedItemFindings(interpretation.coverage.unparsed_items),
-      ...evidence.findings.map((finding) => ({
-        blocking: false,
-        code: finding.code,
-        message: finding.message,
-        severity: finding.severity,
-        source_refs: finding.source_refs,
-      })),
-    ],
-    [
-      evidence.findings,
-      interpretation.coverage.unparsed_items,
-      interpretation.findings,
-    ],
-  );
   const findings = useMemo(() => {
     const summarizedImages = new Set(
       evidence.image_summary.unimported_references.map(
         (image) => image.source_ref,
       ),
     );
-    return deriveReviewFindings(draft, materialFindings).filter(
+    return deriveReviewSessionFindings(
+      draft,
+      interpretation,
+      evidence,
+      corrections,
+    ).filter(
       (finding) =>
         !(
           ["MISSING_ASSET", "MISSING_RELATIVE_ASSET"].includes(finding.code) &&
@@ -436,7 +449,7 @@ export function ReviewScreen({
           finding.source_refs!.every((ref) => summarizedImages.has(ref))
         ),
     );
-  }, [draft, evidence.image_summary, materialFindings]);
+  }, [draft, evidence, interpretation, corrections]);
   const blocking = findings.some((finding) => finding.blocking);
   const blockingFindings = findings.filter((finding) => finding.blocking);
   const informationalFindings = findings.filter((finding) => !finding.blocking);
@@ -610,6 +623,7 @@ export function ReviewScreen({
                         editReviewTrip(draft, {
                           start_date: event.target.value || null,
                         }),
+                        { kind: "trip", field: "start_date" },
                       )
                     }
                     slotProps={{ inputLabel: { shrink: true } }}
@@ -624,6 +638,7 @@ export function ReviewScreen({
                         editReviewTrip(draft, {
                           end_date: event.target.value || null,
                         }),
+                        { kind: "trip", field: "end_date" },
                       )
                     }
                     slotProps={{ inputLabel: { shrink: true } }}
@@ -644,6 +659,21 @@ export function ReviewScreen({
                     <SourceExcerpt items={evidence.itemsFor(day.source_refs)} />
                     <div className="grid gap-4">
                       <TextField
+                        label="日期原文"
+                        value={day.label ?? ""}
+                        helperText="可保留 8/16 等不完整日期，不必補上年份。"
+                        slotProps={{ htmlInput: { maxLength: 240 } }}
+                        onChange={(event) =>
+                          onDraftChange(
+                            editReviewDay(draft, day.id, {
+                              label: event.target.value || null,
+                            }),
+                            { kind: "day", id: day.id, field: "label" },
+                          )
+                        }
+                        className="w-full"
+                      />
+                      <TextField
                         label="日期"
                         type="date"
                         value={day.date ?? ""}
@@ -652,6 +682,7 @@ export function ReviewScreen({
                             editReviewDay(draft, day.id, {
                               date: event.target.value || null,
                             }),
+                            { kind: "day", id: day.id, field: "date" },
                           )
                         }
                         slotProps={{ inputLabel: { shrink: true } }}

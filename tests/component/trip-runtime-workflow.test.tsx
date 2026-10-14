@@ -96,12 +96,12 @@ const parseTrip: ParseTrip = vi.fn(async ({ source }: ParseTripRequest) => {
   } satisfies SemanticInterpretationResult;
 });
 
-async function startPasteWorkflow(user: ReturnType<typeof userEvent.setup>) {
+async function startPasteWorkflow(
+  user: ReturnType<typeof userEvent.setup>,
+  markdown = validTextSourceInput.content,
+) {
   await user.click(await screen.findByRole("tab", { name: "直接貼上" }));
-  await user.type(
-    screen.getByLabelText("貼上 Markdown 行程內容"),
-    validTextSourceInput.content,
-  );
+  await user.type(screen.getByLabelText("貼上 Markdown 行程內容"), markdown);
   await user.click(screen.getByRole("button", { name: "送給 Gemini 判讀" }));
   expect(
     await screen.findByRole("heading", { name: "對照原文，把行程確認清楚。" }),
@@ -194,63 +194,166 @@ describe("integrated local Review workflow", () => {
     });
   });
 
-  it("keeps the original interpretation intact while confirming only the conservatively adjusted candidate", async () => {
-    const user = userEvent.setup();
-    const repository = createRepository({ active: sampleTrip });
-    let recordedInterpretation: SemanticInterpretationResult | null = null;
-    const parser: ParseTrip = vi.fn(async ({ source }: ParseTripRequest) => {
-      const sourceRef = source.evidence_units[0]!.id;
-      const draft = structuredClone(validParsedTripDraft);
-      draft.trip = {
-        ...draft.trip,
+  it.each([false, true])(
+    "keeps the original interpretation intact through conservative Review and confirmation (user corrects clock: %s)",
+    async (correctClock) => {
+      const user = userEvent.setup();
+      const repository = createRepository({ active: sampleTrip });
+      let recordedInterpretation: SemanticInterpretationResult | null = null;
+      const parser: ParseTrip = vi.fn(async ({ source }: ParseTripRequest) => {
+        const sourceRef = source.evidence_units.find((unit) =>
+          unit.raw_value.includes("6:30"),
+        )!.id;
+        const draft = structuredClone(validParsedTripDraft);
+        draft.trip = {
+          ...draft.trip,
+          id: "trip:adjusted-review",
+          title: "Adjusted Review Trip",
+          source_refs: [sourceRef],
+        };
+        draft.days = draft.days.map((day) => ({
+          ...day,
+          source_refs: [sourceRef],
+        }));
+        draft.entities = draft.entities.map((entity) => ({
+          ...entity,
+          source_refs: [sourceRef],
+          time: {
+            kind: "exact" as const,
+            start: "06:30",
+            end: null,
+            daypart: null,
+            raw_text: "6:30",
+            crosses_midnight: false,
+          },
+        }));
+        recordedInterpretation = {
+          schema_version: "semantic-interpretation-result.v2",
+          source_schema_version: source.schema_version,
+          source_id: source.source_id,
+          status: "draft",
+          draft,
+          findings: [
+            {
+              id: "finding:local-fidelity:ambiguous_clock_precision_inferred:workflow",
+              blocking: true,
+              code: "AMBIGUOUS_CLOCK_PRECISION_INFERRED",
+              message: "6:30 has no supported meridiem.",
+              severity: "review",
+              entity_refs: [draft.entities[0]!.id],
+              source_refs: [sourceRef],
+            },
+          ],
+          coverage: {
+            total_blocks: source.evidence_units.length,
+            block_dispositions: source.evidence_units.map((unit) => ({
+              source_ref: unit.id,
+              disposition: "interpreted" as const,
+            })),
+            unparsed_items: [],
+          },
+        };
+        return recordedInterpretation;
+      });
+
+      render(
+        <TripRuntimeStartup
+          credentialRepository={credentialRepository}
+          localDataOperations={localDataOperations}
+          parseTrip={parser}
+          repository={repository}
+          sampleTrip={sampleTrip}
+          renderViewer={(trip, controls) => (
+            <div>
+              <h1>Viewer: {trip.title}</h1>
+              <button onClick={controls.onShowHome}>Show Home</button>
+            </div>
+          )}
+        />,
+      );
+
+      await user.click(
+        await screen.findByRole("button", { name: "Show Home" }),
+      );
+      await startPasteWorkflow(user, "# One day\n\n6:30 Arrive");
+
+      expect(screen.getByText("系統保守調整 1 項")).toBeVisible();
+      expect(screen.getByText(/現在：時間未定，保留「6:30」/)).toBeVisible();
+      expect(
+        screen.getByRole("button", { name: "確認並使用這份行程" }),
+      ).toBeEnabled();
+      expect(repository.replaceActive).not.toHaveBeenCalled();
+      expect(recordedInterpretation!.draft!.entities[0]!.time).toMatchObject({
+        kind: "exact",
+        start: "06:30",
+      });
+
+      await user.click(
+        screen.getByRole("button", { name: "查看完整校對內容" }),
+      );
+      expect(
+        screen.getByRole("combobox", { name: "時間精度" }),
+      ).toHaveTextContent("沒有時間");
+      if (correctClock) {
+        await user.click(screen.getByRole("combobox", { name: "時間精度" }));
+        await user.click(screen.getByRole("option", { name: "確切時間" }));
+        expect(
+          screen.getByRole("button", { name: "確認並使用這份行程" }),
+        ).toBeDisabled();
+        await user.type(
+          screen.getByLabelText("開始", { exact: true }),
+          "18:30",
+        );
+        expect(screen.getByText("USER_CORRECTED_FINDING")).toBeVisible();
+        expect(
+          screen.getByRole("button", { name: "確認並使用這份行程" }),
+        ).toBeEnabled();
+      }
+      await user.click(
+        screen.getByRole("button", { name: "確認並使用這份行程" }),
+      );
+
+      await waitFor(() =>
+        expect(repository.replaceActive).toHaveBeenCalledOnce(),
+      );
+      expect(
+        vi.mocked(repository.replaceActive).mock.calls[0]![0],
+      ).toMatchObject({
         id: "trip:adjusted-review",
-        title: "Adjusted Review Trip",
-        source_refs: [sourceRef],
-      };
-      draft.days = draft.days.map((day) => ({
-        ...day,
-        source_refs: [sourceRef],
-      }));
-      draft.entities = draft.entities.map((entity) => ({
-        ...entity,
-        source_refs: [sourceRef],
-        time: {
-          kind: "exact" as const,
-          start: "06:30",
-          end: null,
-          daypart: null,
-          raw_text: "6:30",
-          crosses_midnight: false,
-        },
-      }));
-      recordedInterpretation = {
-        schema_version: "semantic-interpretation-result.v2",
-        source_schema_version: source.schema_version,
-        source_id: source.source_id,
-        status: "draft",
-        draft,
-        findings: [
+        entities: [
           {
-            id: "finding:local-fidelity:ambiguous_clock_precision_inferred:workflow",
-            blocking: true,
-            code: "AMBIGUOUS_CLOCK_PRECISION_INFERRED",
-            message: "6:30 has no supported meridiem.",
-            severity: "review",
-            entity_refs: [draft.entities[0]!.id],
-            source_refs: [sourceRef],
+            time: {
+              kind: correctClock ? "exact" : "none",
+              start: correctClock ? "18:30" : null,
+              raw_text: "6:30",
+            },
+            state: { unresolved: true },
           },
         ],
-        coverage: {
-          total_blocks: source.evidence_units.length,
-          block_dispositions: source.evidence_units.map((unit) => ({
-            source_ref: unit.id,
-            disposition: "interpreted" as const,
-          })),
-          unparsed_items: [],
-        },
-      };
-      return recordedInterpretation;
-    });
+      });
+      const persisted = vi.mocked(repository.replaceActive).mock.calls[0]![0];
+      expect(JSON.stringify(persisted)).not.toMatch(
+        /corrections|time_fields|AMBIGUOUS_CLOCK/,
+      );
+      expect(recordedInterpretation!.draft!.entities[0]!.time).toMatchObject({
+        kind: "exact",
+        start: "06:30",
+        raw_text: "6:30",
+      });
+    },
+  );
+
+  it("retries provider unavailability through the same parser and prepared source while preserving the active trip", async () => {
+    const user = userEvent.setup();
+    const repository = createRepository({ active: sampleTrip });
+    const parser = vi
+      .fn<ParseTrip>()
+      .mockRejectedValueOnce(
+        Object.assign(new Error("model overloaded"), {
+          code: "provider_unavailable",
+        }),
+      )
+      .mockImplementation((request) => parseTrip(request));
 
     render(
       <TripRuntimeStartup
@@ -260,111 +363,41 @@ describe("integrated local Review workflow", () => {
         repository={repository}
         sampleTrip={sampleTrip}
         renderViewer={(trip, controls) => (
-          <div>
+          <>
             <h1>Viewer: {trip.title}</h1>
             <button onClick={controls.onShowHome}>Show Home</button>
-          </div>
+          </>
         )}
       />,
     );
 
     await user.click(await screen.findByRole("button", { name: "Show Home" }));
-    await startPasteWorkflow(user);
-
-    expect(screen.getByText("系統保守調整 1 項")).toBeVisible();
-    expect(screen.getByText(/現在：時間未定，保留「6:30」/)).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "確認並使用這份行程" }),
-    ).toBeEnabled();
-    expect(repository.replaceActive).not.toHaveBeenCalled();
-    expect(recordedInterpretation!.draft!.entities[0]!.time).toMatchObject({
-      kind: "exact",
-      start: "06:30",
-    });
-
-    await user.click(screen.getByRole("button", { name: "查看完整校對內容" }));
-    expect(
-      screen.getByRole("combobox", { name: "時間精度" }),
-    ).toHaveTextContent("沒有時間");
-    await user.click(
-      screen.getByRole("button", { name: "確認並使用這份行程" }),
-    );
-
-    await waitFor(() =>
-      expect(repository.replaceActive).toHaveBeenCalledOnce(),
-    );
-    expect(vi.mocked(repository.replaceActive).mock.calls[0]![0]).toMatchObject(
-      {
-        id: "trip:adjusted-review",
-        entities: [
-          {
-            time: {
-              kind: "none",
-              start: null,
-              raw_text: "6:30",
-            },
-            state: { unresolved: true },
-          },
-        ],
-      },
-    );
-  });
-
-  it("offers a configured fallback only after provider unavailability and reuses the selected source explicitly", async () => {
-    const user = userEvent.setup();
-    const primaryParser: ParseTrip = vi.fn(async () => {
-      throw Object.assign(new Error("primary model overloaded"), {
-        code: "provider_unavailable",
-      });
-    });
-    const fallbackParser: ParseTrip = vi.fn((request) => parseTrip(request));
-
-    render(
-      <TripRuntimeStartup
-        credentialRepository={credentialRepository}
-        fallbackModel="gemini-3.6-flash"
-        fallbackParseTrip={fallbackParser}
-        localDataOperations={localDataOperations}
-        parseTrip={primaryParser}
-        repository={createRepository()}
-        sampleTrip={sampleTrip}
-        renderViewer={(trip) => <h1>Viewer: {trip.title}</h1>}
-      />,
-    );
-
-    await user.click(await screen.findByRole("tab", { name: "直接貼上" }));
+    await user.click(screen.getByRole("tab", { name: "直接貼上" }));
     await user.type(
       screen.getByLabelText("貼上 Markdown 行程內容"),
       validTextSourceInput.content,
     );
     await user.click(screen.getByRole("button", { name: "送給 Gemini 判讀" }));
-
     expect(await screen.findByRole("alert")).toHaveTextContent(
       createIntakeFailure("provider_unavailable").message,
     );
-    expect(primaryParser).toHaveBeenCalledOnce();
-    expect(fallbackParser).not.toHaveBeenCalled();
+    expect(parser).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("button", { name: /改用.*重試/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "回到目前行程" })).toBeEnabled();
+    expect(repository.replaceActive).not.toHaveBeenCalled();
 
-    await user.click(
-      screen.getByRole("button", {
-        name: "改用 gemini-3.6-flash 重試",
-      }),
-    );
-
+    await user.click(screen.getByRole("button", { name: "重新送出這份行程" }));
     expect(
       await screen.findByRole("heading", {
         name: "對照原文，把行程確認清楚。",
       }),
     ).toBeVisible();
-    expect(fallbackParser).toHaveBeenCalledOnce();
-    const primaryRequest = vi.mocked(primaryParser).mock.calls[0]![0];
-    const fallbackRequest = vi.mocked(fallbackParser).mock.calls[0]![0];
-    expect(
-      fallbackRequest.source.evidence_units.map((unit) => unit.display_value),
-    ).toEqual(
-      primaryRequest.source.evidence_units.map((unit) => unit.display_value),
-    );
-    expect(fallbackRequest.sourceId).toBe(fallbackRequest.source.source_id);
+    expect(parser).toHaveBeenCalledTimes(2);
+    const [first, retry] = parser.mock.calls.map(([request]) => request);
+    expect(retry!.source).toBe(first!.source);
+    expect(retry!.sourceId).toBe(first!.sourceId);
+    expect(retry!.signal).not.toBe(first!.signal);
+    expect(repository.replaceActive).not.toHaveBeenCalled();
   });
 
   it("releases the interaction lock and names the timed-out phase", async () => {

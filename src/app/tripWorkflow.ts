@@ -1,3 +1,4 @@
+import type { ReviewCorrection } from "../features/review/reviewPreservation";
 import type {
   CanonicalTrip,
   ParsedTripDraft,
@@ -10,11 +11,13 @@ import type { ReviewAdjustment } from "../features/review/reviewAdjustment";
 
 // Intake metadata stays in the application session; spreadsheet sources are
 // not fabricated Markdown inputs and no source content reaches persistence.
-export type IntakeSourceInput = TextSourceInput | {
-  source_id: string;
-  display_name: string;
-  input_mode: "spreadsheet_file" | "csv_file";
-};
+export type IntakeSourceInput =
+  | TextSourceInput
+  | {
+      source_id: string;
+      display_name: string;
+      input_mode: "spreadsheet_file" | "csv_file";
+    };
 
 export type TripWorkflowStatus =
   | "idle"
@@ -51,6 +54,7 @@ export type TripWorkflowFailure = {
 };
 
 export type TripCandidateSession = {
+  corrections: ReviewCorrection[];
   adjustments: ReviewAdjustment[];
   document: ValidatedUnifiedSourceDocument | null;
   draft: ParsedTripDraft | null;
@@ -118,6 +122,7 @@ export type TripWorkflowEvent =
     }
   | {
       type: "review_draft_changed";
+      corrections?: ReviewCorrection[];
       sessionId: string;
       draft: ParsedTripDraft;
       findings: TripFinding[];
@@ -191,6 +196,7 @@ export function tripWorkflowReducer(
       return {
         ...state,
         candidate: {
+          corrections: [],
           adjustments: [],
           document: null,
           draft: null,
@@ -294,6 +300,9 @@ export function tripWorkflowReducer(
             candidate: {
               ...state.candidate!,
               draft: event.draft,
+              corrections: structuredClone(
+                event.corrections ?? state.candidate!.corrections,
+              ),
               findings: structuredClone(event.findings),
             },
           }

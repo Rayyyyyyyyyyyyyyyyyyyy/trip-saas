@@ -1,11 +1,7 @@
 import type { SemanticInterpretationResult, TripFinding } from "../trip/types";
 import type { ValidatedUnifiedSourceDocument } from "./types";
 import { assessTabularDateSupport } from "./assessTabularDateSupport";
-
-const AMBIGUOUS_CLOCK =
-  /(?:^|\D)(?:[1-9]|1[01])(?::[0-5]\d|\.[0-5]\d|點)|[一二三四五六七八九十]{1,3}點/u;
-const EXPLICIT_DAYPART =
-  /(?:上午|下午|早上|早晨|中午|傍晚|晚上|夜間|凌晨|\b(?:a\.?m\.?|p\.?m\.?)\b)/iu;
+import { hasAmbiguousClockExpression } from "./clockExpression";
 
 function finding(
   code: string,
@@ -84,8 +80,19 @@ export function validateInterpretationFidelity(
     if (
       entity.time.raw_text &&
       ["exact", "approximate", "daypart"].includes(entity.time.kind) &&
-      AMBIGUOUS_CLOCK.test(entity.time.raw_text) &&
-      !EXPLICIT_DAYPART.test(entity.time.raw_text)
+      hasAmbiguousClockExpression(
+        entity.time.raw_text,
+        entity.source_refs.flatMap((ref) => {
+          const unit = unitById.get(ref);
+          return unit
+            ? [
+                source.source_format === "tabular"
+                  ? unit.display_value
+                  : unit.raw_value,
+              ]
+            : [];
+        }),
+      )
     ) {
       findings.push(
         finding(
@@ -96,7 +103,6 @@ export function validateInterpretationFidelity(
         ),
       );
     }
-    AMBIGUOUS_CLOCK.lastIndex = 0;
   }
 
   findings.push(...assessTabularDateSupport(result.draft, source).findings);

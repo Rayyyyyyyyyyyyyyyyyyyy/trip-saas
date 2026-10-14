@@ -23,5 +23,3 @@ export const CONFIGURED_PARSER_BASE_URL = `http://127.0.0.1:${CONFIGURED_PARSER_
 export const UNCONFIGURED_PARSER_BASE_URL = `http://127.0.0.1:${UNCONFIGURED_PARSER_PORT}`;
 
 export const BROWSER_TEST_GEMINI_MODEL = "gemini-test-model";
-export const BROWSER_TEST_GEMINI_FALLBACK_MODEL =
-  "gemini-fallback-test-model";

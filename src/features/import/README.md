@@ -46,3 +46,5 @@ Own Home intake, `TextSourceInput` normalization, structure-preserving Markdown 
 - The full-screen processing modal exposes `停止這次判讀` while accidental Escape/backdrop dismissal stays disabled. Stop, timeout and failure return to preserved-source recovery and do not change the confirmed trip. Selection also survives Review cancellation; successful confirmation and explicit local clearing discard the raw controls.
 
 - One application prepared-source cache serves both Markdown and spreadsheet downstream retries; all form/mode/selection edits explicitly invalidate it. Retry retains source identities, reloads the credential and receives fresh ownership. The feature never stores parser output or its own processing timers.
+
+- Provider failure recovery resubmits the preserved source through the sole configured parser; the form exposes no alternate-model retry action.

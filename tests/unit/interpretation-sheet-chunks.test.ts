@@ -711,6 +711,16 @@ describe("whole-sheet interpretation", () => {
   });
 
   it("removes local fidelity findings before recomputing them against the complete source", async () => {
+    const source = sourceDocument();
+    for (const unit of source.evidence_units) {
+      if (
+        unit.structural_evidence[0].evidence_kind === "tabular_region" &&
+        unit.structural_evidence[0].row_start === 2
+      ) {
+        unit.raw_value = `7點 ${unit.raw_value}`;
+        unit.display_value = unit.raw_value;
+      }
+    }
     const mock = transport((result) => {
       result.draft!.entities[0].time = {
         kind: "exact",
@@ -722,7 +732,10 @@ describe("whole-sheet interpretation", () => {
       };
       return result;
     });
-    const result = await parseChunks(mock);
+    mock.maxRequestBytes = Math.max(
+      ...chunkSourceBySheet(source).map(prepareFixtureBytes),
+    );
+    const result = await parseChunks(mock, request(source));
     const findings = result.findings.filter(
       (finding) => finding.code === "AMBIGUOUS_CLOCK_PRECISION_INFERRED",
     );

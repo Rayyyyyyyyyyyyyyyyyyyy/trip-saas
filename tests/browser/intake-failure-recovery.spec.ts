@@ -61,34 +61,24 @@ function collectConsoleErrors(page: Page) {
   return errors;
 }
 
-test("a 503 offers an explicit fallback without calling it automatically", async ({
+test("503 exhaustion preserves a manual retry through the same configured model", async ({
   page,
 }) => {
   const consoleErrors = collectConsoleErrors(page);
   let primaryRequests = 0;
-  let fallbackRequests = 0;
 
   await page.route(
     "**/v1beta/models/gemini-test-model:generateContent",
     async (route) => {
       primaryRequests += 1;
-      await route.fulfill({
-        status: 503,
-        contentType: "application/json",
-        body: JSON.stringify({
-          error: {
-            code: 503,
-            message: "This model is currently experiencing high demand.",
-            status: "UNAVAILABLE",
-          },
-        }),
-      });
-    },
-  );
-  await page.route(
-    "**/v1beta/models/gemini-fallback-test-model:generateContent",
-    async (route) => {
-      fallbackRequests += 1;
+      if (primaryRequests <= 3) {
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: { code: 503, status: "UNAVAILABLE" } }),
+        });
+        return;
+      }
       const request = route.request().postDataJSON() as {
         contents: Array<{ parts: Array<{ text: string }> }>;
       };
@@ -135,31 +125,20 @@ test("a 503 offers an explicit fallback without calling it automatically", async
   await page.getByRole("tab", { name: "直接貼上" }).click();
   await page
     .getByRole("textbox", { name: "貼上 Markdown 行程內容" })
-    .fill("# Backup model check\n\n- Free time");
+    .fill("# Same model retry check\n\n- Free time");
   await page.getByRole("button", { name: "送給 Gemini 判讀" }).click();
 
   const notice = page.getByRole("alert");
   await expect(notice).toBeVisible();
   await expect(notice).toContainText("判讀服務目前無法處理請求");
-  await expect(
-    page.getByRole("button", {
-      name: "改用 gemini-fallback-test-model 重試",
-    }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /改用.*重試/ })).toHaveCount(0);
   expect(primaryRequests).toBe(3);
-  expect(fallbackRequests).toBe(0);
-
-  await page
-    .getByRole("button", {
-      name: "改用 gemini-fallback-test-model 重試",
-    })
-    .click();
+  await page.getByRole("button", { name: "重新送出這份行程" }).click();
 
   await expect(
     page.getByRole("heading", { name: "目前還無法安全整理這份行程。" }),
   ).toBeVisible();
-  expect(primaryRequests).toBe(3);
-  expect(fallbackRequests).toBe(1);
+  expect(primaryRequests).toBe(4);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth > window.innerWidth,

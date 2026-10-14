@@ -131,31 +131,43 @@ describe("Gemini structured transport", () => {
     ).resolves.toEqual({});
 
     expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls.map(([url]) => String(url))).toEqual([
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
+    ]);
     expect(wait).toHaveBeenCalledOnce();
     expect(wait).toHaveBeenCalledWith(100, undefined);
   });
 
-  it("stops retrying a persistent 503 at the configured bound", async () => {
-    const wait = vi.fn(
-      async (_milliseconds: number, _signal?: AbortSignal) => undefined,
-    );
-    const fetch = vi.fn(async () => new Response("{}", { status: 503 }));
+  it.each([
+    [429, "rate_limited"],
+    [503, "provider_unavailable"],
+  ] as const)(
+    "stops retrying persistent %s at the configured bound on the same exact model",
+    async (status, code) => {
+      const wait = vi.fn(
+        async (_milliseconds: number, _signal?: AbortSignal) => undefined,
+      );
+      const fetch = vi.fn(
+        async (_url: string | URL | Request) => new Response("{}", { status }),
+      );
 
-    await expect(
-      createGeminiTransport({
-        fetch,
-        maxAttempts: 3,
-        model: GEMINI_ACCEPTANCE_CANDIDATE,
-        retryDelayMs: (attempt) => attempt * 100,
-        wait,
-      })
-        .prepare("source")
-        .send({ credential: "key" }),
-    ).rejects.toMatchObject({ code: "provider_unavailable" });
+      await expect(
+        createGeminiTransport({
+          fetch,
+          maxAttempts: 3,
+          model: GEMINI_ACCEPTANCE_CANDIDATE,
+          retryDelayMs: (attempt) => attempt * 100,
+          wait,
+        })
+          .prepare("source")
+          .send({ credential: "key" }),
+      ).rejects.toMatchObject({ code });
 
-    expect(fetch).toHaveBeenCalledTimes(3);
-    expect(wait.mock.calls.map(([delay]) => delay)).toEqual([100, 200]);
-  });
+      expect(fetch).toHaveBeenCalledTimes(3);
+      expect(wait.mock.calls.map(([delay]) => delay)).toEqual([100, 200]);
+    },
+  );
 });
 
 describe("noncooperative transport deadlines", () => {

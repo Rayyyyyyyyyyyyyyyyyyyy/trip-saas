@@ -1,3 +1,4 @@
+import { createReviewEvidenceProjection } from "../domain/source/reviewEvidence";
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import type {
   UnifiedSourceDocument,
@@ -18,7 +19,7 @@ import {
   normalizeMarkdownFile,
   normalizePastedMarkdown,
 } from "../features/import/textSourceInput";
-import { deriveReviewFindings } from "../features/review/reviewCandidate";
+import { deriveReviewSessionFindings } from "../features/review/reviewCandidate";
 import { applyConservativeReviewAdjustments } from "../features/review/reviewAdjustment";
 import type { GeminiCredentialRepository } from "../persistence/geminiCredentialRepository";
 import { describeIntakeFailure } from "./describeIntakeFailure";
@@ -70,8 +71,6 @@ export type TripIntakeOptions = {
 export function useTripIntakeWorkflow(
   options: {
     credentialRepository?: GeminiCredentialRepository;
-    fallbackModel?: string;
-    fallbackParseTrip?: ParseTrip;
     parseTrip?: ParseTrip;
     onSourcePrepared?: SourcePreparedHandler;
     processing?: TripIntakeOptions;
@@ -162,10 +161,8 @@ export function useTripIntakeWorkflow(
     [invalidatePreparedSource, options.processing?.deadlines],
   );
   const submit = useCallback(
-    async (
-      submission: TripIntakeSubmission,
-      selectedParseTrip: ParseTrip | undefined = options.parseTrip,
-    ) => {
+    async (submission: TripIntakeSubmission) => {
+      const parseTrip = options.parseTrip;
       const identity = {
         mode: submission.mode,
         value:
@@ -279,7 +276,7 @@ export function useTripIntakeWorkflow(
           sessionId: session.sessionId,
           document,
         });
-        if (options.onSourcePrepared || !selectedParseTrip) {
+        if (options.onSourcePrepared || !parseTrip) {
           if (options.onSourcePrepared)
             await run.wait("parsing", () =>
               options.onSourcePrepared!({ input, document }),
@@ -300,7 +297,7 @@ export function useTripIntakeWorkflow(
           requestId: request.requestId,
         });
         const interpretation = await run.wait("parsing", () =>
-          selectedParseTrip({
+          parseTrip({
             credential: credential.credential,
             source: document,
             sourceId: input.source_id,
@@ -364,9 +361,10 @@ export function useTripIntakeWorkflow(
               requestId: request.requestId,
               adjustments: adjustmentResult.adjustments,
               draft: adjustmentResult.candidate,
-              findings: deriveReviewFindings(
+              findings: deriveReviewSessionFindings(
                 adjustmentResult.candidate,
-                reviewInterpretation.findings,
+                reviewInterpretation,
+                createReviewEvidenceProjection(document),
               ),
             });
           }
@@ -396,25 +394,13 @@ export function useTripIntakeWorkflow(
       invalidatePreparedSource,
     ],
   );
-  const submitWithFallback = useCallback(
-    async (submission: MarkdownSubmission) => {
-      if (!options.fallbackParseTrip) return;
-      await submit(submission, options.fallbackParseTrip);
-    },
-    [options.fallbackParseTrip, submit],
-  );
   return {
     workflow,
     dispatch,
     submit,
-    submitWithFallback,
     stop,
     invalidatePreparedSource,
     inspectSpreadsheetFile,
-    fallbackModel:
-      options.fallbackParseTrip && options.fallbackModel
-        ? options.fallbackModel
-        : null,
     interprets: Boolean(options.parseTrip || options.onSourcePrepared),
   };
 }

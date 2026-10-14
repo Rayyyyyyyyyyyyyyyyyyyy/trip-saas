@@ -1,3 +1,7 @@
+import {
+  recordReviewCorrection,
+  type ReviewCorrection,
+} from "../../src/features/review/reviewPreservation";
 import { useState } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -63,25 +67,32 @@ function Harness({
   onCancel = vi.fn(),
   onConfirm = vi.fn(),
   adjustments = [],
+  source = document,
 }: {
   initialDraft?: ParsedTripDraft;
   interpretation?: SemanticInterpretationResult;
   onCancel?: () => void;
   onConfirm?: () => void;
   adjustments?: ReviewAdjustment[];
+  source?: UnifiedSourceDocument;
 }) {
   const [draft, setDraft] = useState<ParsedTripDraft>(() =>
     structuredClone(initialDraft),
   );
+  const [corrections, setCorrections] = useState<ReviewCorrection[]>([]);
   return (
     <ReviewScreen
       adjustments={adjustments}
-      evidence={evidenceFor(document)}
+      evidence={evidenceFor(source)}
+      corrections={corrections}
       draft={draft}
       interpretation={interpretation}
       onCancel={onCancel}
       onConfirm={onConfirm}
-      onDraftChange={setDraft}
+      onDraftChange={(next, edit) => {
+        setCorrections(recordReviewCorrection(draft, next, corrections, edit));
+        setDraft(next);
+      }}
       originalDraft={initialDraft}
     />
   );
@@ -220,7 +231,16 @@ describe("ReviewScreen", () => {
       },
     ];
 
-    render(<Harness initialDraft={draft} interpretation={interpretation} />);
+    const source = structuredClone(document);
+    source.evidence_units[0]!.raw_value = "七點 散步";
+    source.evidence_units[0]!.display_value = "七點 散步";
+    render(
+      <Harness
+        initialDraft={draft}
+        interpretation={interpretation}
+        source={source}
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "查看完整校對內容" }));
 
     expect(screen.getByLabelText("行程名稱")).toHaveValue("");
@@ -235,6 +255,294 @@ describe("ReviewScreen", () => {
     expect(
       screen.getByRole("button", { name: "確認並使用這份行程" }),
     ).toBeEnabled();
+  });
+
+  it("blocks substituted clock evidence without a generic acknowledgement escape", () => {
+    const draft = structuredClone(validParsedTripDraft);
+    draft.entities[0]!.time = {
+      kind: "none",
+      start: null,
+      end: null,
+      daypart: null,
+      raw_text: "7:00",
+      crosses_midnight: false,
+    };
+    const interpretation = structuredClone(validDraftInterpretationResult);
+    interpretation.findings = [
+      {
+        id: "finding:clock",
+        code: "AMBIGUOUS_CLOCK",
+        message: "保留七點原文",
+        blocking: false,
+        source_refs: ["source-block:001"],
+        entity_refs: [draft.entities[0]!.id],
+      },
+    ];
+    const source = structuredClone(document);
+    source.evidence_units[0]!.raw_value = "七點 散步";
+    render(
+      <Harness
+        initialDraft={draft}
+        interpretation={interpretation}
+        source={source}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "確認並使用這份行程" }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "確認已解決 AMBIGUOUS_CLOCK" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("reconciles a missing-year warning after trusted date edits and keeps cleared dates informative", () => {
+    const draft = structuredClone(validParsedTripDraft);
+    draft.trip.start_date = null;
+    draft.trip.end_date = null;
+    draft.days[0]!.date = null;
+    draft.days[0]!.label = "8/16";
+    const interpretation = structuredClone(validDraftInterpretationResult);
+    interpretation.findings = [
+      {
+        id: "finding:year",
+        code: "MISSING_YEAR",
+        message: "原文未指定年份",
+        blocking: true,
+        source_refs: ["source-block:001"],
+        entity_refs: [],
+      },
+    ];
+    const source = structuredClone(document);
+    source.evidence_units[0]!.raw_value = "8/16 京都散步";
+    render(
+      <Harness
+        initialDraft={draft}
+        interpretation={interpretation}
+        source={source}
+      />,
+    );
+    const confirm = screen.getByRole("button", { name: "確認並使用這份行程" });
+    expect(confirm).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "查看完整校對內容" }));
+    fireEvent.change(screen.getByLabelText("開始日期"), {
+      target: { value: "2027-08-16" },
+    });
+    fireEvent.change(screen.getByLabelText("結束日期"), {
+      target: { value: "2027-08-16" },
+    });
+    fireEvent.change(
+      screen.getByLabelText("日期", { exact: true, selector: "input" }),
+      { target: { value: "2027-08-16" } },
+    );
+    expect(confirm).toBeEnabled();
+    expect(screen.getByText("USER_CORRECTED_FINDING")).toBeVisible();
+    expect(screen.queryByText("需要修正")).not.toBeInTheDocument();
+    fireEvent.change(
+      screen.getByLabelText("日期", { exact: true, selector: "input" }),
+      { target: { value: "" } },
+    );
+    expect(confirm).toBeEnabled();
+  });
+
+  it("restores a missing partial date label without inventing a year", () => {
+    const draft = structuredClone(validParsedTripDraft);
+    draft.trip.start_date = null;
+    draft.trip.end_date = null;
+    draft.days[0]!.date = null;
+    draft.days[0]!.label = null;
+    const interpretation = structuredClone(validDraftInterpretationResult);
+    interpretation.findings = [
+      {
+        id: "finding:year",
+        code: "MISSING_YEAR",
+        message: "原文未指定年份",
+        blocking: true,
+        source_refs: ["source-block:001"],
+        entity_refs: [],
+      },
+    ];
+    const source = structuredClone(document);
+    source.evidence_units[0]!.raw_value = "8/16 京都散步";
+    const onConfirm = vi.fn();
+    render(
+      <Harness
+        initialDraft={draft}
+        interpretation={interpretation}
+        source={source}
+        onConfirm={onConfirm}
+      />,
+    );
+    const confirm = screen.getByRole("button", { name: "確認並使用這份行程" });
+    expect(confirm).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "查看完整校對內容" }));
+    const originalDate = screen.getByLabelText("日期原文");
+    expect(originalDate).toHaveValue("");
+    expect(originalDate).toHaveAttribute("maxlength", "240");
+    fireEvent.change(originalDate, { target: { value: "8/16" } });
+    expect(
+      screen.getByLabelText("日期", { exact: true, selector: "input" }),
+    ).toHaveValue("");
+    expect(screen.getByLabelText("開始日期")).toHaveValue("");
+    expect(screen.getByLabelText("結束日期")).toHaveValue("");
+    expect(confirm).toBeEnabled();
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("restores a substituted raw clock while retaining unknown time precision", () => {
+    const draft = structuredClone(validParsedTripDraft);
+    draft.entities[0]!.time.raw_text = "19:00";
+    const interpretation = structuredClone(validDraftInterpretationResult);
+    interpretation.findings = [
+      {
+        id: "finding:clock",
+        code: "AMBIGUOUS_CLOCK",
+        message: "保留七點原文",
+        blocking: true,
+        source_refs: ["source-block:001"],
+        entity_refs: [draft.entities[0]!.id],
+      },
+    ];
+    const source = structuredClone(document);
+    source.evidence_units[0]!.raw_value = "七點 散步";
+    const onConfirm = vi.fn();
+    render(
+      <Harness
+        initialDraft={draft}
+        interpretation={interpretation}
+        source={source}
+        onConfirm={onConfirm}
+      />,
+    );
+    const confirm = screen.getByRole("button", { name: "確認並使用這份行程" });
+    expect(confirm).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "查看完整校對內容" }));
+    const originalTime = screen.getByLabelText("時間原文");
+    expect(originalTime).toHaveValue("19:00");
+    expect(originalTime).toHaveAttribute("maxlength", "240");
+    fireEvent.change(originalTime, { target: { value: "七點" } });
+    expect(
+      screen.getByRole("combobox", { name: "時間精度" }),
+    ).toHaveTextContent("沒有時間");
+    expect(
+      screen.queryByLabelText("開始", { exact: true }),
+    ).not.toBeInTheDocument();
+    expect(confirm).toBeEnabled();
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps inferred precision blocked after repairing only the raw clock until the user clears precision", async () => {
+    const user = userEvent.setup();
+    const draft = structuredClone(validParsedTripDraft);
+    draft.entities[0]!.time = {
+      kind: "exact",
+      start: "19:00",
+      end: null,
+      daypart: null,
+      raw_text: "19:00",
+      crosses_midnight: false,
+    };
+    const interpretation = structuredClone(validDraftInterpretationResult);
+    interpretation.findings = [
+      {
+        id: "finding:clock",
+        code: "AMBIGUOUS_CLOCK",
+        message: "保留七點原文",
+        blocking: true,
+        source_refs: ["source-block:001"],
+        entity_refs: [draft.entities[0]!.id],
+      },
+    ];
+    const source = structuredClone(document);
+    source.evidence_units[0]!.raw_value = "七點 散步";
+    const onConfirm = vi.fn();
+    render(
+      <Harness
+        initialDraft={draft}
+        interpretation={interpretation}
+        source={source}
+        onConfirm={onConfirm}
+      />,
+    );
+    const confirm = screen.getByRole("button", { name: "確認並使用這份行程" });
+    expect(confirm).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "查看完整校對內容" }));
+    fireEvent.change(screen.getByLabelText("時間原文"), {
+      target: { value: "七點" },
+    });
+    expect(screen.getByLabelText("開始", { exact: true })).toHaveValue("19:00");
+    expect(confirm).toBeDisabled();
+    await user.click(screen.getByRole("combobox", { name: "時間精度" }));
+    await user.click(screen.getByRole("option", { name: "沒有時間" }));
+    expect(screen.getByLabelText("時間原文")).toHaveValue("七點");
+    expect(
+      screen.queryByLabelText("開始", { exact: true }),
+    ).not.toBeInTheDocument();
+    expect(confirm).toBeEnabled();
+    await user.click(confirm);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("reconciles a clock finding after explicit deletion while preserving another valid entity", () => {
+    const draft = structuredClone(validParsedTripDraft);
+    draft.entities[0]!.time.raw_text = "19:00";
+    const other = structuredClone(validParsedTripDraft.entities[0]!);
+    other.id = "entity:walk";
+    other.title = "Walk";
+    other.raw_label = "Walk";
+    other.source_refs = ["source-block:002"];
+    draft.entities.push(other);
+    const interpretation = structuredClone(validDraftInterpretationResult);
+    interpretation.findings = [
+      {
+        id: "finding:clock",
+        code: "AMBIGUOUS_CLOCK",
+        message: "保留七點原文",
+        blocking: true,
+        source_refs: ["source-block:001"],
+        entity_refs: [draft.entities[0]!.id],
+      },
+    ];
+    const source = structuredClone(document);
+    source.evidence_units[0]!.raw_value = "七點 散步";
+    const otherUnit = structuredClone(source.evidence_units[0]!);
+    otherUnit.id = "source-block:002";
+    otherUnit.source_order = 1;
+    otherUnit.locator = "paste:lines:2-2";
+    otherUnit.raw_value = "Walk";
+    otherUnit.display_value = "Walk";
+    otherUnit.structural_evidence = [
+      {
+        evidence_kind: "markdown_block",
+        block_type: "paragraph",
+        depth: 0,
+        line_start: 2,
+        line_end: 2,
+      },
+    ];
+    source.evidence_units.push(otherUnit);
+    const onConfirm = vi.fn();
+    render(
+      <Harness
+        initialDraft={draft}
+        interpretation={interpretation}
+        source={source}
+        onConfirm={onConfirm}
+      />,
+    );
+    const confirm = screen.getByRole("button", { name: "確認並使用這份行程" });
+    expect(confirm).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "查看完整校對內容" }));
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "刪除誤判內容" })[0]!,
+    );
+    expect(screen.queryByDisplayValue("Arrive")).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue("Walk")).toBeVisible();
+    expect(screen.getByText("1 天 · 1 筆行程")).toBeVisible();
+    expect(confirm).toBeEnabled();
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
   it("shows source evidence before editable content and exposes correction actions", () => {

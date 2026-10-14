@@ -97,12 +97,6 @@ export function useMarkdownIntake(controller: TripIntakeWorkflow) {
         ? ("idle" as const)
         : (stages[workflow.status] ?? "idle"),
     failure,
-    fallbackModel: controller.fallbackModel,
-    canUseFallback:
-      !isSpreadsheet &&
-      !isBusy &&
-      failure?.code === "provider_unavailable" &&
-      controller.fallbackModel !== null,
     prepared:
       workflow.candidate?.source && workflow.candidate.document
         ? {
@@ -203,15 +197,6 @@ export function useMarkdownIntake(controller: TripIntakeWorkflow) {
       } else {
         setPasteTouched(true);
         await controller.submit({ mode, paste });
-      }
-    },
-    async processSourceWithFallback() {
-      if (isSpreadsheet || !controller.fallbackModel) return;
-      if (mode === "file") {
-        if (file) await controller.submitWithFallback({ mode, file });
-      } else {
-        setPasteTouched(true);
-        await controller.submitWithFallback({ mode, paste });
       }
     },
   };

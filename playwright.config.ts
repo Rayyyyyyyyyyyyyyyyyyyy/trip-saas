@@ -1,7 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
 import {
-  BROWSER_TEST_GEMINI_FALLBACK_MODEL,
   BROWSER_TEST_GEMINI_MODEL,
   CONFIGURED_PARSER_BASE_URL,
   CONFIGURED_PARSER_PORT,
@@ -66,7 +65,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `VITE_GEMINI_MODEL=${BROWSER_TEST_GEMINI_MODEL} VITE_GEMINI_FALLBACK_MODEL=${BROWSER_TEST_GEMINI_FALLBACK_MODEL} npm run dev -- --host 127.0.0.1 --port ${CONFIGURED_PARSER_PORT}`,
+      command: `VITE_GEMINI_MODEL=${BROWSER_TEST_GEMINI_MODEL} npm run dev -- --host 127.0.0.1 --port ${CONFIGURED_PARSER_PORT}`,
       url: CONFIGURED_PARSER_BASE_URL,
       reuseExistingServer: !process.env.CI,
     },
@@ -74,7 +73,7 @@ export default defineConfig({
     // accepted model is pinned and Gemini intake stays unavailable. The empty
     // process value also overrides any local `.env.development.local`.
     {
-      command: `VITE_GEMINI_MODEL= VITE_GEMINI_FALLBACK_MODEL= npm run dev -- --host 127.0.0.1 --port ${UNCONFIGURED_PARSER_PORT}`,
+      command: `VITE_GEMINI_MODEL= npm run dev -- --host 127.0.0.1 --port ${UNCONFIGURED_PARSER_PORT}`,
       url: UNCONFIGURED_PARSER_BASE_URL,
       reuseExistingServer: !process.env.CI,
     },

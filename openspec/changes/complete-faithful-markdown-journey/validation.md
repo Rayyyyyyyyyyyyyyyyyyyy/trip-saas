@@ -109,3 +109,79 @@ The user explicitly chose to retain exact `gemini-3.5-flash`, superseding the pr
 The latest user rule prohibits browser verification without separate explicit authorization. This follow-up performs only non-browser tests/build/static checks; the October 1 browser evidence above is historical and is not a fresh verification claim.
 
 Fresh non-browser checks for this follow-up: 91 focused tests passed across Gemini transport/parser and both benchmark runners; `npm run build` passed (generated validators/typecheck included; existing chunk-size warning); both active changes passed strict OpenSpec validation; `git diff --check` passed. The mocked transport regression confirms both attempts after a 429 request exact `gemini-3.5-flash`, with no substitution. Local development configuration was checked as exact 3.5 without reading/printing credentials. No live provider or browser verification was run.
+
+## 2026-10-12 paused implementation checkpoint
+
+This is partial implementation evidence, not a completed acceptance run. The
+user requested a pause after the first independent review round. Four open P2
+findings and the exact resume order are recorded in `handoff.md`.
+
+- New Review preservation regression was run against the previous
+  `reviewCandidate.ts` and failed as expected for an invented exact clock; the
+  current implementation was restored and its focused suite passed.
+- Focused Review unit suites passed 52 tests. After source-fixture corrections,
+  preservation/tabular-date suites passed 34 tests.
+- The earlier full unit attempt passed 577 tests and failed one stale source
+  fixture. That fixture was fixed and its focused suite passed; the full unit
+  suite has **not** been rerun after that correction.
+- Review/workflow component suites passed 21 tests after correcting their
+  source fixture. At the final checkpoint the Review component suite passed
+  14/14, including the two newly added source-substitution and explicit-date-edit
+  regressions. The full component suite has not been rerun for this slice.
+- Separate agent checks covered transport/parser (40 tests), app/workflow/cache
+  (34 component tests), final transport URL assertions (15 tests), and clock
+  fidelity/source chunk regressions (83 tests). These overlap other focused
+  runs and must not be added into a total.
+- `npm run build` passed at the pause checkpoint, including generated validators
+  and TypeScript checks; the existing bundle-size warning remains.
+- An initial checkpoint command used a nonexistent component config and exited
+  before running tests. It was corrected to the repository's `--project
+  component` command; the successful 14-test result above is the actual evidence.
+
+No browser or live Gemini verification was executed. Prior browser/live evidence
+is historical. The production model remains unaccepted/unconfigured, the new
+working-tree changes remain uncommitted, and full final verification plus review
+closure remains pending.
+
+## 2026-10-12 resumed slice verification
+
+The user resumed the paused work. Tasks 4.9 and 4.11–4.13 are implemented;
+documentation task 7.4 now records all eight follow-up dispositions in this
+owner's `handoff.md`. This section supersedes the paused checkout's pending
+local-check status, without erasing its failures or claiming live acceptance.
+
+Fresh checks on the final executable changes:
+
+- `npm run test:unit`: **591/591 passed**, 58 files. Includes source-scoped
+  preservation, actual-field correction authority, exact-ID deletion, all
+  related date-bearing target checks, same-model retries and clock context.
+- `npm run test:component`: **123/123 passed**, 13 files, using jsdom without a
+  browser. Includes label/raw-time repair, raw-only precision bypass rejection,
+  deletion recovery and real Startup correction through persistence. The
+  original provider result remains unchanged; correction records and findings
+  do not enter CanonicalTrip.
+- `npm run build`: passed, including generated-schema validators and TypeScript
+  checks. The existing bundle-size warning remains; no performance acceptance
+  is inferred from this build.
+- Both active changes passed strict OpenSpec validation. `git diff --check`
+  passed after the implementation/documentation updates.
+- The full component run initially found one genuine regression: provider
+  `MISSING_ASSET` did not reconcile with the locally proven
+  `MISSING_RELATIVE_ASSET` warning. Source-matched local asset-code equivalence
+  restores the existing non-blocking image summary. Its focused rerun and the
+  final full component run passed; unmatched warnings retain their own state.
+- Both review axes completed two bounded rounds. Initial four P2 findings were
+  repaired; round two additionally found raw-only edits authorizing unchanged
+  precision and provider scope excluding related Day dates. Actual precision
+  fields are now individually tracked, and date scope follows resolved source
+  relationships. Final Standards review reports no remaining P1/P2; final Spec
+  review confirmed the year-scope regression is closed. No additional review
+  scope or speculative cleanup was introduced.
+
+Fresh browser verification is **not run** under the explicit user rule. The
+required later browser checks concern mobile/desktop input behavior, layout,
+keyboard and console; jsdom does not prove those properties. Live Gemini,
+current exact-model benchmark #001, qualifying-original Result/reload acceptance,
+human usability, production default activation, and spreadsheet live support
+declaration remain unpassed/open. No key read, provider request, browser
+operation, commit, push, main merge or deployment occurred.

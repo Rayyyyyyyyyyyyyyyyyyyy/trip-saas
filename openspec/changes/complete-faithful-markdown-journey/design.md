@@ -150,6 +150,22 @@ source/context evidence that a 12-hour interpretation is unresolved. Legal
 fixtures. Passing this bounded detector is necessary evidence only, not general
 semantic proof.
 
+The implemented Review trust record is an application-owned, memory-only
+sidecar, outside provider, Draft and Canonical schemas. It snapshots actual
+user changes and their source references; time corrections track individually
+changed precision fields. Repairing a raw expression or changing only the time
+kind cannot approve untouched inferred precision. Revert or stale values/refs
+invalidate correction authority. Exact-ID explicit user deletion retires only
+that removed entity's obsolete clock finding after current validation.
+
+Date scope follows resolved source relationships, rather than treating provider
+`entity_refs` as an exclusive whitelist. A referenced Trip, Day or event must
+resolve to the source; all related date-bearing targets are inspected. Partial
+dates split into multiple Days may remain across their labels or source-linked
+event/supporting notes within the same evidence unit. Review offers bounded
+date-label and raw-time editors for repairs without compulsory factual
+completion. Confirmation derives the same checks again before persistence.
+
 #### Review by exception, not full-document inspection
 
 The normal Review path is a compact commit checkpoint, not an obligation to

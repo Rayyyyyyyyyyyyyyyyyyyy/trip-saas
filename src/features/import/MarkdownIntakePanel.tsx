@@ -393,15 +393,6 @@ function MarkdownIntakeFailureNotice({
             重新送出這份行程
           </Button>
         )}
-        {intake.canUseFallback && intake.fallbackModel && (
-          <Button
-            className="min-h-11 px-0 underline"
-            disabled={!intake.canStart}
-            onClick={() => void intake.processSourceWithFallback()}
-          >
-            改用 {intake.fallbackModel} 重試
-          </Button>
-        )}
         <span className="self-center font-utility text-xs text-trip-muted">
           也可以在上方換一份檔案或改寫貼上的內容。
         </span>

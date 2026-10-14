@@ -1,3 +1,10 @@
+import type { ReviewEvidenceProjection } from "../../domain/source/reviewEvidence";
+import type { SemanticInterpretationResult } from "../../domain/trip/types";
+import {
+  isPreservationFinding,
+  preservationFindingState,
+  type ReviewFindingContext,
+} from "./reviewPreservation";
 import { validateParsedTripDraft } from "../../domain/trip/validateParsedTripDraft";
 import type {
   Coverage,
@@ -34,34 +41,8 @@ const REVALIDATED_FINDING_CODES = new Set([
   "DEPENDENCY_ID_CONFLICT",
 ]);
 
-const CANDIDATE_STATE_FINDING_CODES = new Set([
-  "AMBIGUOUS_CLOCK_PRECISION_INFERRED",
-]);
-
 const USER_RESOLVED_FINDING_CODE = "USER_RESOLVED_FINDING";
-
-// These codes describe facts that the source did not supply or expressions
-// whose ambiguity can be represented faithfully. Provider-supplied `blocking`
-// is advisory for these known cases: forcing the traveler to invent a year,
-// meridiem, or missing asset would make the
-// confirmed trip less faithful. Deterministic schema/semantic conflicts remain
-// blocking through `validateParsedTripDraft`.
-const NON_BLOCKING_PRESERVATION_FINDING_CODES = new Set([
-  "AMBIGUOUS_CLOCK",
-  "AMBIGUOUS_CLOCK_FORMAT",
-  "AMBIGUOUS_TIME",
-  "AMBIGUOUS_TIME_MERIDIEM",
-  "MISSING_ASSET",
-  "MISSING_RELATIVE_ASSET",
-  "MISSING_TRIP_YEAR",
-  "MISSING_YEAR",
-]);
-
-function applyReviewBlockingPolicy(finding: TripFinding): TripFinding {
-  return NON_BLOCKING_PRESERVATION_FINDING_CODES.has(finding.code)
-    ? { ...finding, blocking: false }
-    : finding;
-}
+const LOCAL_ASSET_CODES = new Set(["MISSING_ASSET", "MISSING_RELATIVE_ASSET"]);
 
 function findingIdentity(finding: TripFinding) {
   return JSON.stringify([
@@ -92,24 +73,8 @@ export function reviewFindingResolutionId(finding: TripFinding) {
 export function isMechanicallyRevalidatedFinding(finding: TripFinding) {
   return (
     REVALIDATED_FINDING_CODES.has(finding.code) ||
-    CANDIDATE_STATE_FINDING_CODES.has(finding.code)
+    isPreservationFinding(finding)
   );
-}
-
-function candidateStateFindingStillApplies(
-  draft: ParsedTripDraft,
-  finding: TripFinding,
-) {
-  if (finding.code !== "AMBIGUOUS_CLOCK_PRECISION_INFERRED") return true;
-  if (!finding.entity_refs?.length) return true;
-  return finding.entity_refs.some((entityId) => {
-    const entity = draft.entities.find(
-      (candidate) => candidate.id === entityId,
-    );
-    return (
-      !entity || ["exact", "approximate", "daypart"].includes(entity.time.kind)
-    );
-  });
 }
 
 export type ReviewEntityFieldPath =
@@ -124,6 +89,7 @@ export type ReviewEntityFieldPath =
   | "time.start"
   | "time.end"
   | "time.daypart"
+  | "time.raw_text"
   | "time.crosses_midnight"
   | "state"
   | "state.optional"
@@ -150,6 +116,7 @@ function uniqueFindings(findings: TripFinding[]) {
 export function deriveReviewFindings(
   draft: ParsedTripDraft,
   interpretationFindings: TripFinding[] = [],
+  context?: ReviewFindingContext,
 ): TripFinding[] {
   const draftValidation = validateParsedTripDraft(draft);
   const confidenceFindings = draft.entities
@@ -187,10 +154,39 @@ export function deriveReviewFindings(
     .filter(
       (finding) =>
         !REVALIDATED_FINDING_CODES.has(finding.code) &&
-        candidateStateFindingStillApplies(draft, finding) &&
-        !resolvedFindingIds.has(reviewFindingResolutionId(finding)),
+        (isPreservationFinding(finding) ||
+          !resolvedFindingIds.has(reviewFindingResolutionId(finding))),
     )
-    .map(applyReviewBlockingPolicy);
+    .map((finding): TripFinding => {
+      if (!isPreservationFinding(finding)) {
+        const localAsset =
+          LOCAL_ASSET_CODES.has(finding.code) &&
+          context?.evidence.findings.some(
+            (item) =>
+              LOCAL_ASSET_CODES.has(item.code) &&
+              item.severity === "warning" &&
+              (finding.source_refs?.length ?? 0) > 0 &&
+              [...new Set(item.source_refs)].sort().join("\n") ===
+                [...new Set(finding.source_refs)].sort().join("\n"),
+          );
+        return localAsset ? { ...finding, blocking: false } : finding;
+      }
+      const state = preservationFindingState(
+        draft,
+        finding,
+        context,
+        draftValidation.valid,
+      );
+      if (state === "corrected")
+        return {
+          ...finding,
+          code: "USER_CORRECTED_FINDING",
+          message: `已依你的修改重新檢查：${finding.code} · ${finding.message}`,
+          blocking: false,
+          severity: "info",
+        };
+      return { ...finding, blocking: state === "blocking" };
+    });
 
   return uniqueFindings([
     ...unresolvedMaterialFindings,
@@ -198,6 +194,26 @@ export function deriveReviewFindings(
     ...confidenceFindings,
     ...overrideFindings,
   ]);
+}
+
+export function deriveReviewSessionFindings(
+  draft: ParsedTripDraft,
+  interpretation: SemanticInterpretationResult,
+  evidence: ReviewEvidenceProjection,
+  corrections: ReviewFindingContext["corrections"] = [],
+) {
+  return deriveReviewFindings(
+    draft,
+    [
+      ...interpretation.findings,
+      ...deriveUnparsedItemFindings(interpretation.coverage.unparsed_items),
+      ...evidence.findings.map((finding) => ({
+        ...finding,
+        blocking: finding.severity === "error",
+      })),
+    ],
+    { evidence, corrections },
+  );
 }
 
 export function resolveReviewFinding(

@@ -1,3 +1,6 @@
+import { createReviewEvidenceProjection } from "../../src/domain/source/reviewEvidence";
+import { validateUnifiedSourceDocument } from "../../src/domain/source/validateUnifiedSourceDocument";
+import { recordReviewCorrection } from "../../src/features/review/reviewPreservation";
 import { readFileSync } from "node:fs";
 import Ajv2020 from "ajv/dist/2020.js";
 import type { AnySchema } from "ajv";
@@ -261,7 +264,23 @@ describe("interpretation field guidance and uncertainty", () => {
       text: "![map](./map.png)",
       source_refs: ["source-block:001"],
     });
-    expect(deriveReviewFindings(draft).filter((f) => f.blocking)).toEqual([]);
+    const source = structuredClone(validMarkdownSourceDocument);
+    source.evidence_units = [source.evidence_units[0]!];
+    source.evidence_units[0]!.id = "source-block:001";
+    source.evidence_units[0]!.raw_value = "4/12 六點 散步";
+    source.evidence_units[0]!.display_value = "4/12 六點 散步";
+    source.extraction_findings = [];
+    const gate = validateUnifiedSourceDocument(source, {
+      source_id: source.source_id,
+    });
+    if (!gate.valid) throw new Error("invalid fixture");
+    const context = {
+      evidence: createReviewEvidenceProjection(gate.document),
+      corrections: [] as ReturnType<typeof recordReviewCorrection>,
+    };
+    expect(
+      deriveReviewFindings(draft, [], context).filter((f) => f.blocking),
+    ).toEqual([]);
     const repository = {
       loadActive: vi.fn(),
       clear: vi.fn(),
@@ -278,20 +297,46 @@ describe("interpretation field guidance and uncertainty", () => {
       raw_text: "六點",
     });
     repository.replaceActive.mockClear();
-    draft = editReviewTrip(draft, {
-      start_date: "2027-04-12",
-      end_date: "2027-04-12",
+    for (const field of ["start_date", "end_date"] as const) {
+      const next = editReviewTrip(draft, { [field]: "2027-04-12" });
+      context.corrections = recordReviewCorrection(
+        draft,
+        next,
+        context.corrections,
+        { kind: "trip", field },
+      );
+      draft = next;
+    }
+    const dated = editReviewDay(draft, draft.days[0].id, {
+      date: "2027-04-12",
     });
-    draft = editReviewDay(draft, draft.days[0].id, { date: "2027-04-12" });
-    draft = editReviewEntity(draft, draft.entities[0].id, "time", (entity) => {
-      entity.time.kind = "exact";
-      entity.time.start = "18:00";
-    });
-    // The original findings stay visible, but supported unknowns and ambiguity
-    // remain non-blocking whether the traveler keeps or fills them.
-    expect(deriveReviewFindings(draft).filter((f) => f.blocking)).toHaveLength(
-      0,
+    context.corrections = recordReviewCorrection(
+      draft,
+      dated,
+      context.corrections,
+      { kind: "day", id: draft.days[0].id, field: "date" },
     );
+    draft = dated;
+    const timed = editReviewEntity(
+      draft,
+      draft.entities[0].id,
+      "time",
+      (entity) => {
+        entity.time.kind = "exact";
+        entity.time.start = "18:00";
+      },
+    );
+    context.corrections = recordReviewCorrection(
+      draft,
+      timed,
+      context.corrections,
+      { kind: "entity", id: draft.entities[0].id, field: "time" },
+    );
+    draft = timed;
+    // Source-linked unknowns stay informative; trusted edits reconcile obsolete ambiguity findings.
+    expect(
+      deriveReviewFindings(draft, [], context).filter((f) => f.blocking),
+    ).toHaveLength(0);
     const canonical = await confirmReviewedTrip(draft, repository);
     expect(canonical.entities[0].time).toMatchObject({
       start: "18:00",
