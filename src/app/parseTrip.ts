@@ -4,10 +4,20 @@ import type {
 } from "../domain/trip/types";
 import type { UnifiedSourceDocument } from "../domain/source/types";
 
+/** Browser-memory resume state only; never a provider envelope or stored trip. */
+export type InterpretationCheckpoint = {
+  sourceId: string;
+  requestIdentities: readonly string[];
+  completed: readonly { index: number; result: SemanticInterpretationResult }[];
+};
+
 export type ParseTripRequest = {
   credential: string;
   signal?: AbortSignal;
   onStage?: (stage: InterpretationStage) => void;
+  onProgress?: (progress: { completed: number; total: number }) => void;
+  checkpoint?: InterpretationCheckpoint;
+  onCheckpoint?: (checkpoint: InterpretationCheckpoint) => void;
   source: UnifiedSourceDocument;
   // The identity the source document is supposed to describe. The port
   // re-checks agreement itself: a document paired with the wrong input must

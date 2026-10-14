@@ -23,7 +23,7 @@ import { deriveReviewSessionFindings } from "../features/review/reviewCandidate"
 import { applyConservativeReviewAdjustments } from "../features/review/reviewAdjustment";
 import type { GeminiCredentialRepository } from "../persistence/geminiCredentialRepository";
 import { describeIntakeFailure } from "./describeIntakeFailure";
-import type { ParseTrip } from "./parseTrip";
+import type { InterpretationCheckpoint, ParseTrip } from "./parseTrip";
 import {
   createInitialTripWorkflowState,
   tripWorkflowReducer,
@@ -82,6 +82,12 @@ export function useTripIntakeWorkflow(
   const coordinator = useRef(createWorkflowRequestCoordinator());
   const activeId = useRef<string | null>(null);
   const preparedSource = useRef<PreparedSource | null>(null);
+  // Validated batches belong to this in-memory selection only. They never
+  // enter reducer state, Review, CanonicalTrip or browser storage.
+  const interpretationCheckpoint = useRef<{
+    parser: ParseTrip;
+    value: InterpretationCheckpoint;
+  } | null>(null);
   const selectedIdentity = useRef<{
     mode: TripIntakeSubmission["mode"];
     value: object | string;
@@ -96,6 +102,7 @@ export function useTripIntakeWorkflow(
   }, []);
   const invalidatePreparedSource = useCallback(() => {
     preparedSource.current = null;
+    interpretationCheckpoint.current = null;
     selectedIdentity.current = null;
     sourceGeneration.current += 1;
     stop();
@@ -104,6 +111,7 @@ export function useTripIntakeWorkflow(
     () => () => {
       if (activeId.current) coordinator.current.cancelSession(activeId.current);
       preparedSource.current = null;
+      interpretationCheckpoint.current = null;
       selectedIdentity.current = null;
       sourceGeneration.current += 1;
     },
@@ -163,6 +171,8 @@ export function useTripIntakeWorkflow(
   const submit = useCallback(
     async (submission: TripIntakeSubmission) => {
       const parseTrip = options.parseTrip;
+      if (interpretationCheckpoint.current?.parser !== parseTrip)
+        interpretationCheckpoint.current = null;
       const identity = {
         mode: submission.mode,
         value:
@@ -302,6 +312,37 @@ export function useTripIntakeWorkflow(
             source: document,
             sourceId: input.source_id,
             signal: run.signal,
+            checkpoint:
+              interpretationCheckpoint.current?.parser === parseTrip &&
+              interpretationCheckpoint.current.value.sourceId ===
+                input.source_id
+                ? structuredClone(interpretationCheckpoint.current.value)
+                : undefined,
+            onCheckpoint(checkpoint) {
+              if (
+                !current() ||
+                run.signal.aborted ||
+                generation !== sourceGeneration.current ||
+                checkpoint.sourceId !== input.source_id
+              )
+                return;
+              interpretationCheckpoint.current = {
+                parser: parseTrip,
+                value: structuredClone(checkpoint),
+              };
+            },
+            onProgress(progress) {
+              if (!current() || run.signal.aborted) return;
+              // Counts describe completed batches only. They do not enter a
+              // stage again or extend either application watchdog.
+              dispatch({
+                type: "interpretation_progress",
+                sessionId: session.sessionId,
+                requestId: request.requestId,
+                completed: progress.completed,
+                total: progress.total,
+              });
+            },
             onStage(stage) {
               run.enter(
                 stage === "source_validation"

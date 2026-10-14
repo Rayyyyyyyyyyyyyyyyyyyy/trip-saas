@@ -59,6 +59,7 @@ function setup(
     value.draft!.trip.source_refs = [first.id];
     value.draft!.days[0].source_refs = [first.id];
     value.draft!.entities[0].source_refs = [source.evidence_units[1].id];
+    value.draft!.entities[0].title = source.evidence_units[1].display_value;
     return change(value);
   });
   const transport: InterpretationTransport = {
@@ -212,9 +213,9 @@ describe("local spreadsheet benchmark safety and evidence", () => {
       unparsed_count: 0,
     });
     expect(artifact.provider_observations).toMatchObject({
-      completed_responses: 1,
-      responses_using_ranges: 1,
-      range_entries: 1,
+      completed_responses: 2,
+      responses_using_ranges: 2,
+      range_entries: 2,
       range_misuse: null,
     });
     expect(

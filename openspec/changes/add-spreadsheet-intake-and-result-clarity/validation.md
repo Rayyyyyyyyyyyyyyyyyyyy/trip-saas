@@ -166,3 +166,24 @@ The user explicitly chose to retain exact `gemini-3.5-flash`, superseding the pr
 The latest user rule prohibits browser verification without separate explicit authorization. This follow-up performs only non-browser tests/build/static checks; the October 1 browser evidence above is historical and is not a fresh verification claim.
 
 Fresh non-browser checks for this follow-up: 91 focused tests passed across Gemini transport/parser and both benchmark runners; `npm run build` passed (generated validators/typecheck included; existing chunk-size warning); both active changes passed strict OpenSpec validation; `git diff --check` passed. The mocked transport regression confirms both attempts after a 429 request exact `gemini-3.5-flash`, with no substitution. Local development configuration was checked as exact 3.5 without reading/printing credentials. No live provider or browser verification was run.
+## 2026-10-14 paused batching checkpoint submission
+
+The user requested commit and push of the paused date-first batching/resume
+work. Its current implementation and known real-payload blocker are recorded
+in `handoff.md`; tasks 4.9–4.12 and 6.6 remain unchecked.
+
+- Full unit/component checkpoint: 664/664 unit tests (61 files), 136/136 jsdom
+  component tests (15 files). These are the preceding run, not new commit-time
+  test executions.
+- Commit-time `npm run build`: passed, including schema generation/typecheck;
+  existing bundle-size warning remains.
+- Strict OpenSpec validation and `git diff --check`: passed.
+- Captured-source new-batching preflight: `preflight_limit`, zero provider
+  calls. Excessive repeated context still exceeds the prepared 64 KB budget.
+- Earlier direct API probes: original full payload medium twice, full low and
+  each complete sheet returned 503; minimal OK and original-schema short prompt
+  returned 200. Batching has not yet demonstrated successful live parsing.
+- Independent review, browser checks and live acceptance are not completed for
+  this slice. Browser use remains prohibited without separate authorization.
+- No credentials, uploaded payload, raw response artifacts or application
+  checkpoints are included in Git. Resume state remains page-memory only.

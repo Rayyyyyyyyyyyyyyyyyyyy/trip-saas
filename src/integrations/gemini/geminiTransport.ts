@@ -168,6 +168,7 @@ export function createGeminiTransport(
     prepare(prompt) {
       const body = JSON.stringify(requestBody(prompt, thinkingLevel));
       return {
+        requestIdentity: `${options.model}\n${body}`,
         requestBytes: new TextEncoder().encode(body).byteLength,
         estimatedInputTokens: Math.ceil(prompt.length / 4),
         send: async ({ credential, signal }) => {

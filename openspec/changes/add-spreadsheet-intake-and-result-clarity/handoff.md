@@ -1,5 +1,119 @@
 # Handoff — add-spreadsheet-intake-and-result-clarity
 
+## 2026-10-14 commit/push checkpoint
+
+The user authorized committing and pushing the paused slice to
+`ft/spreadsheet-intake`. This submission includes the date-first batching,
+memory-only completed-batch resume, regression tests and pause record below.
+Earlier statements about uncommitted work or an unrun final build describe the
+pause before this submission: `npm run build` now passes, including generated
+validators/typecheck, with the existing bundle-size warning. Strict OpenSpec
+validation and `git diff --check` pass. The 664 unit / 136 component results
+remain the preceding checkpoint run; they were not rerun just for this commit.
+
+Implementation/API work remains paused. The captured-source `preflight_limit`
+problem from excessive repeated context, independent review and live acceptance
+remain open. This is a work-in-progress checkpoint, not a fix/acceptance claim
+for the real workbook or a main merge.
+
+## 2026-10-14 user-requested pause: date-first batching and resume
+
+The user explicitly asked to pause. Stop implementation/API work here until
+resumed. New changes are saved, uncommitted, on `ft/spreadsheet-intake`, based
+on commit `d4e7e11` (the prior Review/single-model slice). No new push or merge.
+Tasks 4.9–4.12 and 6.6 remain unchecked: implementation exists, but integrated
+review, final build and the real-payload batching check are not complete.
+
+Approved steering in this session:
+
+- Keep exact `gemini-3.5-flash`; use programmatic API probes without browsers.
+- Split uploads into smaller sequential requests with safe stitching.
+- Prefer dates explicitly visible in the source; a large Day can be subdivided
+  with its original date context. Unknown years/dates must not be guessed.
+- Save successful batches for retry. The user explicitly chose page-memory
+  retention; reload clears it. No checkpoint belongs in persistent storage.
+
+Implemented in the current working tree:
+
+- `domain/source/planSourceChunks.ts` and `calendarDateEvidence.ts`: date-first
+  row/column grouping with structural fallback, ownership/context plans, source
+  gates, bounded preflight, preserved original identities/values/locators and
+  merge context. Defaults: 16 owned-unit target, 32 batches, actual prepared
+  64 KB / 16,000 estimated prompt-token limits in `interpretTrip`.
+- `regionChunkIdentity.ts` and plan-aware `reconcileInterpretationChunks`:
+  owned-only global coverage, calendar-evidence Day continuation, exact
+  relationship-stub aliases and reference-only insufficient preservation.
+  Unknown/conflicting stubs fail; all-unparsed or interpreted insufficient
+  fragments keep the full outcome insufficient. Regional seams require Review.
+- `interpretTrip`, `interpretationTransport`, `parseTrip`, Gemini transport:
+  serial batch preflight/validation, progress and completed-response checkpoint.
+  Exact memory-only request identity includes model/body, excludes credential;
+  cached neutral results are revalidated and never sent as provider envelopes.
+- App workflow/controller/dialog: completed-count progress, active-identity
+  guards and private checkpoint cache tied to parser/source generation.
+  Failure/timeout/stop retain completed work; source edits/selection changes,
+  clear/unmount/reload invalidate it. Existing finite watchdogs are unchanged.
+
+Fresh checkpoint tests: full unit **664/664** (61 files) and jsdom component
+**136/136** (15 files) passed. Relevant TypeScript checks passed after replacing
+unsupported `findLastIndex`. No final production build, browser verification,
+independent two-axis review or final acceptance run is claimed for this slice.
+One legacy test was updated for the new default per-sheet policy; old prepared
+envelope budgets now allow non-monotonic context overhead during planning.
+
+### Real payload/API evidence and immediate resume blocker
+
+User payload attachment (read-only, not committed):
+`/Users/ray.shao/.codex/attachments/a15f2827-5dd1-4934-a8f1-ee6ab7dfa08b/貼上的文字.txt`.
+It contains 133 original tabular units: 28 on 資料, 105 on 行程. The supplied
+pretty JSON is 139,225 bytes; compact equivalent is about 100 KB. Credentials
+come only from the ignored project `.env` GEMINI_API_KEY; never print values.
+
+Programmatic same-model outcomes, before the new batching implementation:
+
+| Probe | Result |
+| --- | --- |
+| Original complete payload, medium | 503 twice, 40.6 s / 20.7 s |
+| Minimal OK request | 200, 2.0 s |
+| Short prompt with original schema/medium | 200, 6.0 s |
+| Complete payload, low | 503, 9.6 s |
+| Validated whole 資料 sheet | 503, 7.4 s |
+| Validated whole 行程 sheet | 503, 3.6 s |
+
+Every 503 reports provider UNAVAILABLE/high demand. These observations do not
+prove invalid credentials/schema, a fixed size threshold, or that chunking
+will cure service overload. Formal Markdown/three-layout gates remain open.
+
+The new production-interpreter **offline preflight** on this real payload
+currently fails `preflight_limit` with **zero provider calls**. Unbudgeted
+planner output has six plans with owned/context counts:
+`16/5, 12/11, 4/50, 50/8, 4/101, 47/58`.
+Some context sets repeat most/all of 行程 (105 submitted units; ~52.9 KB source
+JSON before prompt/schema), exceeding the 64 KB prepared envelope. The current
+row-band/vertical-merge/column-context closure is overly broad for this sample.
+Do not silently raise limits, truncate context or claim the real file works.
+
+First work on resume: reproduce this zero-call preflight failure and narrow
+context/atomic grouping while keeping full merge anchors/covered-child refs,
+time axes and exact source/date evidence. Distinguish indivisible evidence or
+actual merge families from unrelated activities inside the same row band;
+test the real structural pattern with a synthetic fixture. Then rerun the
+captured-source preflight, bounded authorized API probe, full tests/build,
+two-axis review (max two rounds), strict docs/diff checks and status records.
+Existing benchmark runner preflight strategy metadata still reflects the old
+single/whole-sheet heuristic; align it with actual region planning before
+using those artifacts as new acceptance evidence.
+
+Diagnostic-only scripts/artifacts are under `/private/tmp`, not product files:
+`trip-gemini-payload-probe.mjs`, `trip-live-batch-diagnostic.mjs`, generated
+`trip-live-batch-helpers.cjs`, `trip-plan-diagnostic.cjs`, and directory
+`trip-gemini-payload-diagnosis-2026-10-14`. Rebuild the helper bundle from current
+source before rerunning it; it loads maintained Markdown `?raw` and normalizes
+Node/AJV default-export interop only in the temporary bundle. No generated
+repository validator was edited. Raw API diagnostic artifacts remain private;
+the application checkpoint itself is memory-only. No API call is running at
+this pause, and all implementation agents have completed their assigned work.
+
 2026-10-12 cross-owner follow-up: the Markdown owner's tasks 4.9 and 4.11–4.13
 are locally implemented and reviewed. Shared Review now uses source-linked
 partial-date/raw-clock checks and memory-only correction/deletion authority;

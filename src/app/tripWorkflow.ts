@@ -60,6 +60,7 @@ export type TripCandidateSession = {
   draft: ParsedTripDraft | null;
   findings: TripFinding[];
   interpretation: SemanticInterpretationResult | null;
+  interpretationProgress: { completed: number; total: number } | null;
   requestId: string | null;
   sessionId: string;
   source: IntakeSourceInput | null;
@@ -100,6 +101,13 @@ export type TripWorkflowEvent =
       document?: ValidatedUnifiedSourceDocument;
     }
   | { type: "parse_started"; sessionId: string; requestId: string }
+  | {
+      type: "interpretation_progress";
+      sessionId: string;
+      requestId: string;
+      completed: number;
+      total: number;
+    }
   | {
       type: "parse_completed";
       sessionId: string;
@@ -202,6 +210,7 @@ export function tripWorkflowReducer(
           draft: null,
           findings: [],
           interpretation: null,
+          interpretationProgress: null,
           requestId: null,
           sessionId: event.sessionId,
           source: event.source,
@@ -247,10 +256,41 @@ export function tripWorkflowReducer(
       return hasCurrentSession(state, event) && isProcessing(state)
         ? {
             ...state,
-            candidate: { ...state.candidate!, requestId: event.requestId },
+            candidate: {
+              ...state.candidate!,
+              requestId: event.requestId,
+              interpretationProgress: null,
+            },
             status: "parsing",
           }
         : state;
+
+    case "interpretation_progress": {
+      const previous = state.candidate?.interpretationProgress;
+      if (
+        !hasCurrentRequest(state, event) ||
+        !Number.isSafeInteger(event.total) ||
+        !Number.isSafeInteger(event.completed) ||
+        event.total <= 0 ||
+        event.completed < 0 ||
+        event.completed > event.total ||
+        (previous !== null &&
+          previous !== undefined &&
+          (previous.total !== event.total ||
+            previous.completed > event.completed))
+      )
+        return state;
+      return {
+        ...state,
+        candidate: {
+          ...state.candidate!,
+          interpretationProgress: {
+            completed: event.completed,
+            total: event.total,
+          },
+        },
+      };
+    }
 
     case "parse_completed":
       return hasCurrentRequest(state, event)

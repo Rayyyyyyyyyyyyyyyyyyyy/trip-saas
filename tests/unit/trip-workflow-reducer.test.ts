@@ -409,6 +409,13 @@ describe("inactive processing events", () => {
         { type: "processing_stage", sessionId: "old", status: "extracting" },
         { type: "source_prepared", sessionId: "old" },
         {
+          type: "interpretation_progress",
+          sessionId: "old",
+          requestId: "old-request",
+          completed: 1,
+          total: 2,
+        },
+        {
           type: "parse_completed",
           sessionId: "old",
           requestId: "old-request",
@@ -424,4 +431,90 @@ describe("inactive processing events", () => {
         expect(tripWorkflowReducer(state, event)).toBe(state);
     },
   );
+});
+
+describe("session-only interpretation progress", () => {
+  function parsingState() {
+    let state = tripWorkflowReducer(
+      createInitialTripWorkflowState(activeTrip),
+      {
+        type: "intake_started",
+        sessionId: "session:progress",
+        source: validTextSourceInput,
+      },
+    );
+    expect(state.candidate?.interpretationProgress).toBeNull();
+    state = tripWorkflowReducer(state, {
+      type: "parse_started",
+      sessionId: "session:progress",
+      requestId: "request:progress",
+    });
+    return state;
+  }
+  const progress = {
+    type: "interpretation_progress" as const,
+    sessionId: "session:progress",
+    requestId: "request:progress",
+    completed: 0,
+    total: 3,
+  };
+
+  it("updates completed batches without changing processing stage, source or active trip", () => {
+    let state = parsingState();
+    const source = state.candidate!.source;
+    state = tripWorkflowReducer(state, progress);
+    state = tripWorkflowReducer(state, { ...progress, completed: 2 });
+    expect(state.status).toBe("parsing");
+    expect(state.activeTrip).toBe(activeTrip);
+    expect(state.candidate?.source).toBe(source);
+    expect(state.candidate?.interpretationProgress).toEqual({
+      completed: 2,
+      total: 3,
+    });
+    state = tripWorkflowReducer(state, {
+      type: "intake_started",
+      sessionId: "session:new",
+      source: validTextSourceInput,
+    });
+    expect(state.candidate?.interpretationProgress).toBeNull();
+    expect(tripWorkflowReducer(state, { ...progress, completed: 3 })).toBe(
+      state,
+    );
+  });
+
+  it.each([
+    { completed: -1 },
+    { completed: 4 },
+    { completed: 0.5 },
+    { completed: NaN },
+    { total: 0 },
+    { total: Infinity },
+    { total: Number.MAX_SAFE_INTEGER + 1 },
+    { sessionId: "session:old" },
+    { requestId: "request:old" },
+  ])("rejects invalid or inactive batch counts %j", (patch) => {
+    const state = parsingState();
+    expect(tripWorkflowReducer(state, { ...progress, ...patch })).toBe(state);
+  });
+
+  it("ignores regressing or inconsistent totals and all terminal late progress", () => {
+    const state = tripWorkflowReducer(parsingState(), {
+      ...progress,
+      completed: 2,
+    });
+    expect(tripWorkflowReducer(state, { ...progress, completed: 1 })).toBe(
+      state,
+    );
+    expect(
+      tripWorkflowReducer(state, { ...progress, completed: 2, total: 4 }),
+    ).toBe(state);
+    const cancelled = tripWorkflowReducer(state, {
+      type: "workflow_cancelled",
+      sessionId: progress.sessionId,
+    });
+    expect(tripWorkflowReducer(cancelled, { ...progress, completed: 3 })).toBe(
+      cancelled,
+    );
+    expect(cancelled.activeTrip).toBe(activeTrip);
+  });
 });

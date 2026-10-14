@@ -18,7 +18,11 @@ import {
 } from "../domain/source/sourceCoverage";
 import { validateUnifiedSourceDocument } from "../domain/source/validateUnifiedSourceDocument";
 import { validateInterpretationFidelity } from "../domain/source/validateInterpretationFidelity";
-import { chunkSourceBySheet } from "../domain/source/chunkSourceBySheet";
+import {
+  planSourceChunks,
+  SourceChunkPlanningError,
+  type InterpretationChunkPlan,
+} from "../domain/source/planSourceChunks";
 import { reconcileInterpretationChunks } from "../domain/trip/reconcileInterpretationChunks";
 import { ParseTripError, type ParseTripRequest } from "./parseTrip";
 import type { InterpretationTransport } from "./interpretationTransport";
@@ -40,11 +44,23 @@ export type InterpretationFailurePhase =
   "source" | "preflight" | "request" | "response";
 export const DEFAULT_INTERPRETATION_MAX_REQUEST_BYTES = 3_000_000;
 export const DEFAULT_INTERPRETATION_MAX_ESTIMATED_INPUT_TOKENS = 300_000;
+export const DEFAULT_TABULAR_CHUNK_MAX_REQUEST_BYTES = 64_000;
+export const DEFAULT_TABULAR_CHUNK_MAX_ESTIMATED_INPUT_TOKENS = 16_000;
 
-function createPrompt(source: UnifiedSourceDocument) {
+function createPrompt(
+  source: UnifiedSourceDocument,
+  plan?: InterpretationChunkPlan,
+) {
   // The maintained Markdown document is the executable instruction source.
   // Vite bundles it as text; no browser filesystem or runtime document fetch.
-  return `${semanticInterpreterPrompt}\n\n## Source document\n\n${JSON.stringify(source)}`;
+  const scope =
+    plan && plan.contextIds.length > 0
+      ? `\n\n## Interpretation batch scope\n\n${JSON.stringify({
+          owned_source_refs: plan.ownedIds,
+          context_source_refs: plan.contextIds,
+        })}`
+      : "";
+  return `${semanticInterpreterPrompt}${scope}\n\n## Source document\n\n${JSON.stringify(source)}`;
 }
 
 function validateProviderResult(
@@ -189,65 +205,117 @@ export function createInterpretTrip(options: {
       );
     }
     let work = [{ source: gate.document, prepared }];
-    if (!withinBudget(prepared)) {
-      const sheets = chunkSourceBySheet(gate.document);
-      if (sheets.length < 2)
-        return fail(
-          new ParseTripError(
-            "preflight_limit",
-            "這份來源超過判讀的安全請求上限，因此尚未送出。",
-          ),
-          "preflight",
-        );
-      work = [];
-      // Prepare every whole sheet before sending any. A single over-limit
-      // sheet must not consume calls and leave a partially interpreted trip.
-      for (const sheet of sheets) {
-        checkAbort(signal);
-        const chunkGate = validateUnifiedSourceDocument(sheet, {
-          source_id: sourceId,
+    let plans: InterpretationChunkPlan[] | undefined;
+    if (gate.document.source_format === "tabular") {
+      try {
+        plans = planSourceChunks(gate.document, {
+          fits: (chunk, plan) => {
+            checkAbort(signal);
+            const envelope = options.transport.prepare(
+              createPrompt(chunk, plan),
+            );
+            return (
+              withinBudget(envelope) &&
+              envelope.requestBytes <=
+                DEFAULT_TABULAR_CHUNK_MAX_REQUEST_BYTES &&
+              envelope.estimatedInputTokens <=
+                DEFAULT_TABULAR_CHUNK_MAX_ESTIMATED_INPUT_TOKENS
+            );
+          },
         });
-        if (!chunkGate.valid)
+        work = plans.map((plan) => {
+          const chunkGate = validateUnifiedSourceDocument(plan.source, {
+            source_id: sourceId,
+          });
+          if (!chunkGate.valid)
+            throw new ParseTripError(
+              "source_document_invalid",
+              "分段來源未通過結構檢查，因此尚未送出判讀。",
+            );
+          const envelope = options.transport.prepare(
+            createPrompt(chunkGate.document, plan),
+          );
+          if (
+            !withinBudget(envelope) ||
+            envelope.requestBytes > DEFAULT_TABULAR_CHUNK_MAX_REQUEST_BYTES ||
+            envelope.estimatedInputTokens >
+              DEFAULT_TABULAR_CHUNK_MAX_ESTIMATED_INPUT_TOKENS
+          )
+            throw new ParseTripError(
+              "preflight_limit",
+              "單一段落及必要上下文超過判讀上限，因此尚未送出。",
+            );
+          return { source: chunkGate.document, prepared: envelope };
+        });
+      } catch (error) {
+        checkAbort(signal);
+        if (error instanceof ParseTripError) return fail(error, "preflight");
+        if (
+          error instanceof SourceChunkPlanningError &&
+          error.code === "source_document_invalid"
+        )
           return fail(
             new ParseTripError(
               "source_document_invalid",
-              "來源分頁沒有通過結構檢查，因此沒有送出判讀。",
+              "分段來源未通過結構檢查，因此尚未送出判讀。",
             ),
             "source",
           );
-        let envelope: typeof prepared;
-        try {
-          envelope = options.transport.prepare(
-            createPrompt(chunkGate.document),
-          );
-        } catch {
-          return fail(
-            new ParseTripError(
-              "preflight_limit",
-              "無法安全建立這份來源的判讀請求，因此尚未送出。",
-            ),
-            "preflight",
-          );
-        }
-        if (!withinBudget(envelope))
-          return fail(
-            new ParseTripError(
-              "preflight_limit",
-              "單一工作表超過判讀的安全請求上限，因此尚未送出。",
-            ),
-            "preflight",
-          );
-        work.push({ source: chunkGate.document, prepared: envelope });
+        return fail(
+          new ParseTripError(
+            "preflight_limit",
+            "這份來源無法在保留必要上下文的情況下安全分段，因此尚未送出。",
+          ),
+          "preflight",
+        );
       }
+      if (
+        plans.length === 1 &&
+        plans[0]!.contextIds.length === 0 &&
+        plans[0]!.ownedIds.length === gate.document.evidence_units.length
+      ) {
+        plans = undefined;
+        work = [{ source: gate.document, prepared }];
+      }
+    } else if (!withinBudget(prepared)) {
+      return fail(
+        new ParseTripError(
+          "preflight_limit",
+          "這份來源超過判讀的安全請求上限，因此尚未送出。",
+        ),
+        "preflight",
+      );
     }
     onStage?.("interpreting");
     checkAbort(signal);
     const outcomes: InterpretationOutcome[] = [];
-    for (const item of work) {
+    const requestIdentities = work.map((item) => item.prepared.requestIdentity);
+    const resumable = requestIdentities.every(
+      (identity): identity is string =>
+        typeof identity === "string" && identity.length > 0,
+    );
+    const saved = request.checkpoint;
+    const matchesCheckpoint =
+      resumable &&
+      saved?.sourceId === sourceId &&
+      JSON.stringify(saved.requestIdentities) ===
+        JSON.stringify(requestIdentities) &&
+      saved.completed.length <= work.length &&
+      saved.completed.every((item, index) => item.index === index);
+    const cached = matchesCheckpoint ? saved.completed : [];
+    const completed: Array<{
+      index: number;
+      result: SemanticInterpretationResult;
+    }> = [];
+    request.onProgress?.({ completed: cached.length, total: work.length });
+    for (const [index, item] of work.entries()) {
       checkAbort(signal);
       let value: unknown;
       try {
-        value = await item.prepared.send({ credential, signal });
+        value =
+          index < cached.length
+            ? cached[index]!.result
+            : await item.prepared.send({ credential, signal });
       } catch (error) {
         checkAbort(signal);
         if (error instanceof ParseTripError) throw error;
@@ -277,13 +345,28 @@ export function createInterpretTrip(options: {
         );
       }
       checkAbort(signal);
+      completed.push({
+        index,
+        result: structuredClone(value as SemanticInterpretationResult),
+      });
+      if (resumable && completed.length >= cached.length)
+        request.onCheckpoint?.({
+          sourceId,
+          requestIdentities: requestIdentities as string[],
+          completed: structuredClone(completed),
+        });
+      request.onProgress?.({ completed: Math.max(cached.length, outcomes.length), total: work.length });
     }
-    if (work.length === 1) return outcomes[0]!;
+    if (work.length === 1 && !plans) return outcomes[0]!;
     onStage?.("output_validation");
     checkAbort(signal);
     let result: InterpretationOutcome;
     try {
-      const reconciled = reconcileInterpretationChunks(outcomes, gate.document);
+      const reconciled = reconcileInterpretationChunks(
+        outcomes,
+        gate.document,
+        plans,
+      );
       if (!reconciled.valid)
         throw new ParseTripError(
           "draft_not_reviewable",

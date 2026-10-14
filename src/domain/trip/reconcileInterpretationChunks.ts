@@ -1,14 +1,47 @@
 import type { ValidatedUnifiedSourceDocument } from "../source/types";
+import type { InterpretationChunkPlan } from "../source/planSourceChunks";
+import {
+  specificDateAnchor,
+  regionChunkBoundaryRefs,
+} from "../source/regionChunkIdentity";
 import { assessTabularDateSupport } from "../source/assessTabularDateSupport";
 import { validateInterpretationFidelity } from "../source/validateInterpretationFidelity";
 import type {
   DraftDay,
+  DraftEntity,
   ParsedTripDraft,
   SemanticInterpretationResult,
   TripFinding,
 } from "./types";
 
 const unique = <T>(values: T[]): T[] => [...new Set(values)];
+const refIdentity = (refs: readonly string[]) =>
+  JSON.stringify([...new Set(refs)].sort());
+function stableValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, item]) => [key, stableValue(item)]),
+    );
+  return value;
+}
+
+/** IDs are request-local; every other entity field still has to agree. */
+function entityMeaning(entity: DraftEntity) {
+  const { id: _id, day_id: _day, ...meaning } = structuredClone(entity);
+  meaning.source_refs.sort();
+  meaning.actions = meaning.actions.map((action) => ({ ...action, id: "" }));
+  for (const dependency of [
+    meaning.reservation,
+    meaning.ticket,
+    meaning.readiness,
+  ])
+    if (dependency) dependency.todo_id = null;
+  return JSON.stringify(stableValue(meaning));
+}
+
 const findingIdentity = (finding: TripFinding) =>
   JSON.stringify({
     id: finding.id,
@@ -111,6 +144,7 @@ function namespaceChunk(
 export function reconcileInterpretationChunks(
   results: readonly SemanticInterpretationResult[],
   source: ValidatedUnifiedSourceDocument,
+  plans?: readonly InterpretationChunkPlan[],
 ):
   | { valid: true; result: SemanticInterpretationResult }
   | { valid: false; findings: TripFinding[] } {
@@ -130,8 +164,175 @@ export function reconcileInterpretationChunks(
     findings: [{ code, message, blocking: true }],
   });
   const expectedIds = new Set(source.evidence_units.map((unit) => unit.id));
+  let projectedResults = [...results];
+  if (plans) {
+    if (plans.length !== results.length)
+      return invalid(
+        "CHUNK_PLAN_COUNT_MISMATCH",
+        "Chunk plans and results do not match.",
+      );
+    const original = new Map(
+      source.evidence_units.map((unit) => [unit.id, unit]),
+    );
+    const owners = new Set<string>();
+    for (const [index, plan] of plans.entries()) {
+      if (
+        plan.source.source_id !== source.source_id ||
+        plan.source.schema_version !== source.schema_version
+      )
+        return invalid(
+          "CHUNK_SOURCE_IDENTITY_MISMATCH",
+          "Chunk plan identity does not match the original source.",
+        );
+      const submitted = new Set(
+        plan.source.evidence_units.map((unit) => unit.id),
+      );
+      const declared = [...plan.ownedIds, ...plan.contextIds];
+      if (
+        plan.ownedIds.length === 0 ||
+        submitted.size !== plan.source.evidence_units.length ||
+        new Set(declared).size !== declared.length ||
+        declared.length !== submitted.size ||
+        declared.some((id) => !submitted.has(id))
+      )
+        return invalid(
+          "CHUNK_PLAN_SCOPE_INVALID",
+          "Chunk owned and context identities must exactly partition submitted evidence.",
+        );
+      for (const unit of plan.source.evidence_units) {
+        const actual = original.get(unit.id);
+        if (
+          !actual ||
+          JSON.stringify(stableValue({ ...unit, source_order: 0 })) !==
+            JSON.stringify(stableValue({ ...actual, source_order: 0 }))
+        )
+          return invalid(
+            "CHUNK_CONTEXT_MUTATED",
+            "Chunk evidence must be an exact original-source projection.",
+          );
+      }
+      for (const id of plan.ownedIds) {
+        if (owners.has(id))
+          return invalid(
+            "CHUNK_DUPLICATE_SOURCE_UNIT",
+            "Source evidence must have exactly one chunk owner.",
+          );
+        owners.add(id);
+      }
+      const result = results[index]!;
+      const refs = result.coverage.block_dispositions.map(
+        (item) => item.source_ref,
+      );
+      if (
+        result.coverage.block_disposition_ranges?.length ||
+        result.coverage.total_blocks !== submitted.size ||
+        refs.length !== submitted.size ||
+        new Set(refs).size !== submitted.size ||
+        refs.some((id) => !submitted.has(id))
+      )
+        return invalid(
+          "CHUNK_PLAN_COVERAGE_MISMATCH",
+          "Each result must cover exactly its submitted owned and context evidence.",
+        );
+      const recordRefs = [
+        ...result.findings.flatMap((item) => item.source_refs ?? []),
+        ...(result.draft
+          ? [
+              result.draft.trip,
+              ...result.draft.days,
+              ...result.draft.entities,
+              ...result.draft.relationships,
+              ...result.draft.supporting_items,
+              ...result.draft.findings,
+            ].flatMap((item) => item.source_refs)
+          : []),
+        ...result.coverage.unparsed_items.map((item) => item.source_ref),
+      ];
+      if (recordRefs.some((id) => !submitted.has(id)))
+        return invalid(
+          "CHUNK_FOREIGN_SOURCE_REFERENCE",
+          "Chunk semantics reference evidence that was not submitted.",
+        );
+    }
+    if (owners.size !== expectedIds.size)
+      return invalid(
+        "CHUNK_MISSING_SOURCE_UNIT",
+        "Chunk ownership does not cover the original source.",
+      );
+    const hasDraft = results.some((result) => result.status === "draft");
+    projectedResults = results.map((originalResult, index) => {
+      const result = structuredClone(originalResult);
+      const owned = new Set(plans[index]!.ownedIds);
+      result.coverage = {
+        total_blocks: owned.size,
+        block_dispositions: result.coverage.block_dispositions.filter((item) =>
+          owned.has(item.source_ref),
+        ),
+        unparsed_items: result.coverage.unparsed_items.filter((item) =>
+          owned.has(item.source_ref),
+        ),
+      };
+      if (
+        hasDraft &&
+        result.status === "insufficient" &&
+        result.coverage.block_dispositions.some(
+          (item) => item.disposition === "supporting",
+        ) &&
+        result.coverage.block_dispositions.every(
+          (item) => item.disposition !== "interpreted",
+        )
+      ) {
+        result.status = "draft";
+        result.draft = {
+          schema_version: "parsed-trip-draft.v1",
+          trip: {
+            id: "trip:reference-projection",
+            title: null,
+            start_date: null,
+            end_date: null,
+            timezone: null,
+            geography: [],
+            source_refs: [...owned],
+          },
+          days: [],
+          entities: [],
+          relationships: [],
+          findings: [],
+          supporting_items: source.evidence_units
+            .filter((unit) => owned.has(unit.id))
+            .flatMap((unit) => {
+              const entries: ParsedTripDraft["supporting_items"] = [];
+              if (unit.display_value.trim())
+                entries.push({
+                  id: `projection:note:${entries.length}:${unit.id}`,
+                  kind: "note",
+                  text: unit.display_value,
+                  url: null,
+                  unresolved: true,
+                  source_refs: [unit.id],
+                });
+              for (const link of unit.links)
+                entries.push({
+                  id: `projection:link:${entries.length}:${unit.id}`,
+                  kind: "reference",
+                  text: link.label
+                    ? link.target.startsWith("https://")
+                      ? link.label
+                      : link.label + " " + link.target
+                    : link.target,
+                  url: link.target.startsWith("https://") ? link.target : null,
+                  unresolved: true,
+                  source_refs: [unit.id],
+                });
+              return entries;
+            }),
+        };
+      }
+      return result;
+    });
+  }
   const coveredIds = new Set<string>();
-  for (const result of results) {
+  for (const result of projectedResults) {
     if (
       result.source_id !== source.source_id ||
       result.source_schema_version !== source.schema_version
@@ -171,9 +372,64 @@ export function reconcileInterpretationChunks(
       "CHUNK_MISSING_SOURCE_UNIT",
       "Chunk coverage does not cover the complete original source.",
     );
-  const chunks = results.map((result, index) =>
+  const chunks = projectedResults.map((result, index) =>
     namespaceChunk(result, index, source),
   );
+  const entityAliases = new Map<string, string>();
+  if (plans && chunks.every((chunk) => chunk.status === "draft")) {
+    const ownedEntities = chunks.flatMap((chunk, index) =>
+      chunk.draft!.entities.filter((entity) =>
+        entity.source_refs.some((ref) => plans[index]!.ownedIds.includes(ref)),
+      ),
+    );
+    for (const [index, chunk] of chunks.entries()) {
+      const owned = new Set(plans[index]!.ownedIds);
+      const draft = chunk.draft!;
+      const referenced = new Set(
+        draft.relationships.flatMap((relation) => [
+          ...relation.member_entity_ids,
+          ...relation.child_entity_ids,
+          ...(relation.parent_entity_id ? [relation.parent_entity_id] : []),
+        ]),
+      );
+      for (const stub of draft.entities.filter(
+        (entity) => !entity.source_refs.some((ref) => owned.has(ref)),
+      )) {
+        const owners = ownedEntities.filter(
+          (entity) =>
+            refIdentity(entity.source_refs) === refIdentity(stub.source_refs) &&
+            entityMeaning(entity) === entityMeaning(stub),
+        );
+        if (!referenced.has(stub.id) || owners.length !== 1)
+          return invalid(
+            "CHUNK_CONTEXT_ENTITY_CONFLICT",
+            "A context entity must be an exact relationship stub for one uniquely owned entity.",
+          );
+        const owner = owners[0]!;
+        entityAliases.set(stub.id, owner.id);
+        stub.actions.forEach((action, actionIndex) =>
+          entityAliases.set(action.id, owner.actions[actionIndex]!.id),
+        );
+        for (const key of ["reservation", "ticket", "readiness"] as const)
+          if (stub[key]?.todo_id && owner[key]?.todo_id)
+            entityAliases.set(stub[key]!.todo_id!, owner[key]!.todo_id!);
+      }
+      draft.entities = draft.entities.filter((entity) =>
+        entity.source_refs.some((ref) => owned.has(ref)),
+      );
+      draft.supporting_items = draft.supporting_items.filter((item) =>
+        item.source_refs.some((ref) => owned.has(ref)),
+      );
+    }
+    const alias = (id: string) => entityAliases.get(id) ?? id;
+    for (const chunk of chunks)
+      for (const relation of chunk.draft!.relationships) {
+        relation.member_entity_ids = relation.member_entity_ids.map(alias);
+        relation.child_entity_ids = relation.child_entity_ids.map(alias);
+        if (relation.parent_entity_id)
+          relation.parent_entity_id = alias(relation.parent_entity_id);
+      }
+  }
   const findings = chunks.flatMap((chunk) => chunk.findings);
   const dispositions = new Map(
     chunks
@@ -240,9 +496,10 @@ export function reconcileInterpretationChunks(
       ],
     };
   }
-  const aliases = new Map<string, string>();
+  const aliases = new Map<string, string>(entityAliases);
   const days: DraftDay[] = [];
   const dated = new Map<string, DraftDay>();
+  const anchored = new Map<string, DraftDay>();
   const dayLeaveBys = new Map<
     string,
     { values: Set<string>; finding: TripFinding | null }
@@ -257,8 +514,20 @@ export function reconcileInterpretationChunks(
     )) {
       const mergeableDate =
         day.date !== null && !unsupportedDayIds.has(day.id) ? day.date : null;
+      const anchor = plans ? specificDateAnchor(day.source_refs, source) : null;
       const existing =
-        mergeableDate === null ? undefined : dated.get(mergeableDate);
+        (anchor ? anchored.get(anchor) : undefined) ??
+        (mergeableDate === null ? undefined : dated.get(mergeableDate));
+      if (
+        existing &&
+        day.date !== null &&
+        existing.date !== null &&
+        existing.date !== day.date
+      )
+        return invalid(
+          "CHUNK_DAY_DATE_CONFLICT",
+          "The same source date anchor produced conflicting Day dates.",
+        );
       if (!existing) {
         const added = { ...day, source_order: days.length };
         days.push(added);
@@ -272,12 +541,18 @@ export function reconcileInterpretationChunks(
           finding: null,
         });
         if (mergeableDate) dated.set(mergeableDate, added);
+        if (anchor) anchored.set(anchor, added);
       } else {
         aliases.set(day.id, existing.id);
         existing.source_refs = unique([
           ...existing.source_refs,
           ...day.source_refs,
         ]);
+        // Unknown remains unknown if any continuation could not establish its
+        // complete date; a neighbouring response must not silently fill it.
+        if (day.date === null || unsupportedDayIds.has(day.id))
+          existing.date = null;
+        if (anchor) anchored.set(anchor, existing);
         for (const field of ["label", "title", "subtitle"] as const) {
           const texts = dayTexts.get(existing.id)![field];
           if (day[field]) texts.add(day[field]);
@@ -368,6 +643,20 @@ export function reconcileInterpretationChunks(
       .flatMap((draft) => draft.findings)
       .map((finding) => remapFinding(finding) as typeof finding),
   };
+  if (plans) {
+    const boundaryRefs = regionChunkBoundaryRefs(plans, source);
+    if (boundaryRefs.length)
+      findings.push({
+        id: "finding:chunk:seam-review",
+        severity: "review",
+        code: "CHUNK_SEAM_REVIEW",
+        blocking: true,
+        message:
+          "這份工作表分段判讀；請核對分段交界的日期、順序與活動關係，再確認完整行程。",
+        source_refs: unique(boundaryRefs),
+        entity_refs: [],
+      });
+  }
   // Bounds are cleared here, before the Review date-adjustment stage. Preserve
   // their own chunk's partial expression now: a later full-source year must
   // neither confirm it nor cause it to disappear when there are no Days.

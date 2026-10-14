@@ -31,6 +31,10 @@
 - [x] 4.6 Add tabular guidance to the interpreter document (three layouts, typed-hint year rule, exact hyperlinks, reference sheets as supporting) and a deterministic missing-year finding when a confirmed year is absent from cited display text
 - [x] 4.7 Implement whole-sheet chunking with per-chunk validation and global reconciliation; a single over-budget sheet fails with a technical-limit reason (region chunking only if 6.2 shows it is needed)
 - [x] 4.8 Update `src/features/import/README.md` and `src/domain/source/README.md` boundaries
+- [ ] 4.9 Implement the 2026-10-14 user-authorized date-first/structural region chunk planner with disjoint owned IDs, exact repeated source context, merge preservation, complete preflight validation and no truncation.
+- [ ] 4.10 Reconcile owned coverage, source-anchored Days, exact relationship stubs and reference-only fragments globally; reject missing/conflicting identities and expose uncertain seams for Review before a single complete candidate.
+- [ ] 4.11 Run serial batches under existing deadlines/request ownership with bounded visible progress, cancellation, late-result rejection and active-trip protection.
+- [ ] 4.12 Retain validated completed batches only in page memory for unchanged-source retry; bind reuse to exact request/source/parser identity, revalidate on retry, and clear on source changes, explicit clearing or reload.
 
 ## 5. Intake UI and Review
 
@@ -48,3 +52,4 @@
 - [ ] 6.3 Only after 6.2 passes on all three layouts, enable spreadsheet format guidance as supported; otherwise keep it gated and record the failure
 - [x] 6.4 Update `AGENTS.md` roadmap (spreadsheet slice before Hosted Delivery), `spec/01_CANONICAL_CONTEXT.md`, `spec/03_PIPELINE_SPEC.md`, `spec/05_V0_IMPLEMENTATION_PLAN.md`, `spec/06_RESULT_UI_SPEC.md` (map search, labels, image frames, groups), `spec/MVP_UI_SCOPE_REPORT.md`, and `CONTEXT.md` terms (supporting group, range disposition, selected-sheet scope)
 - [x] 6.5 Run `npm run build`, unit/component/browser suites, and strict `openspec validate`; report failures and evidence limits
+- [ ] 6.6 Verify region batching with focused/full non-browser checks and the authorized local payload API probe; record 503 versus success and semantic/coverage outcomes separately, without claiming the three-layout or Markdown gates passed.

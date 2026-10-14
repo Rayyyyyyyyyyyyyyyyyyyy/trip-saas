@@ -79,6 +79,10 @@ export function useMarkdownIntake(controller: TripIntakeWorkflow) {
     paste,
     pasteTouched,
     isBusy,
+    interpretationProgress:
+      isBusy && workflow.status !== "confirming"
+        ? (workflow.candidate?.interpretationProgress ?? null)
+        : null,
     isEmptyPaste: !paste.trim(),
     canStart:
       !isBusy &&

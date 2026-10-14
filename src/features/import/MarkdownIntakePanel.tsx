@@ -287,6 +287,18 @@ function MarkdownProcessingDialog({
             {stageLabel[intake.stage]}
           </Typography>
 
+          {intake.interpretationProgress &&
+            intake.interpretationProgress.total > 1 && (
+              <Typography
+                aria-live="polite"
+                aria-atomic="true"
+                className="mt-2 font-utility text-sm text-trip-muted"
+              >
+                已完成 {intake.interpretationProgress.completed}/
+                {intake.interpretationProgress.total} 段判讀
+              </Typography>
+            )}
+
           <LinearProgress
             aria-label="Gemini 行程判讀進度"
             className="mt-8 h-1"

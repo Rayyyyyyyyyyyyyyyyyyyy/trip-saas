@@ -360,7 +360,7 @@ Approved implementation order after the shared local pipeline:
 → V0.1 Hosted Delivery only after step 12 passes
 ```
 
-Spreadsheet implementation does not activate an accepted production model or pass the Markdown benchmark. Its supported-format guidance remains gated until all three spreadsheet layouts pass; no region chunking is added without evidence that a complete sheet exceeds budget.
+Spreadsheet implementation does not activate an accepted production model or pass the Markdown benchmark. Its supported-format guidance remains gated until all three spreadsheet layouts pass. On 2026-10-14 the user explicitly authorized date-first smaller requests and safe stitching after real 503 failures, superseding the prior requirement to wait for a whole-sheet overflow before region implementation.
 
 V0.2 spreadsheet work must separate deterministic workbook extraction from
 LLM semantic interpretation. The Source Adapter preserves cell values and
@@ -380,7 +380,7 @@ Initial Spreadsheet Travel Table fixture boundary:
 - do not reject merely irregular layouts; technical extraction failure is
   `unsupported/failed`, while extracted-but-uninterpretable content returns
   schema-valid `insufficient`
-- whole-sheet budget preflight precedes every provider call; single-sheet overflow fails explicitly until region chunking is evidenced; all chunk results pass global reconciliation/reference validation before Review
+- date-first/structural batch preflight precedes every provider call; owned evidence remains disjoint and context stays exact; indivisible region overflow fails explicitly. Completed batches remain in page memory for unchanged-source retry only, and all results pass global reconciliation/reference validation before Review.
 - local acceptance fixtures are Busan (row-per-event), 澎湖 (calendar grid), 名古屋 (column-per-day); local-only runner reads ignored files in place and separates execution, pre-Review parser quality, Review recovery and human rubric assessment
 - TODO/missing annotations and unknown rubric metrics remain pending, never zero/pass; no live run without explicit authorization
 

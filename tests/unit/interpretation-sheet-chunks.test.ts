@@ -173,17 +173,21 @@ describe("whole-sheet interpretation", () => {
     expect(source).toEqual(before);
   });
 
-  it("accepts an envelope exactly at the budget and keeps in-budget multi-sheet requests unchanged", async () => {
+  it("accepts the exact batch budget and splits selected sheets even below the old full-request budget", async () => {
     const mock = transport();
-    const fullBytes = prepareFixtureBytes(sourceDocument());
+    const fullBytes = mock.maxRequestBytes;
     const result = await createInterpretTrip({
       transport: mock,
       maxRequestBytes: fullBytes,
     })(request());
     expect(result.status).toBe("draft");
-    expect(mock.prepare).toHaveBeenCalledOnce();
-    expect(mock.send).toHaveBeenCalledOnce();
-    expect(mock.send.mock.calls[0][0].evidence_units).toHaveLength(4);
+    expect(mock.send).toHaveBeenCalledTimes(2);
+    expect(
+      mock.send.mock.calls.map(([source]) => source.evidence_units.length),
+    ).toEqual([2, 2]);
+    expect(
+      mock.send.mock.calls.every(([source]) => prepareFixtureBytes(source) <= fullBytes),
+    ).toBe(true);
   });
 
   it("prepares every sheet before sending, expands ranges, merges dated Days and namespaces duplicate provider IDs", async () => {
@@ -192,12 +196,15 @@ describe("whole-sheet interpretation", () => {
     const result = await parseChunks(mock, {
       onStage: (stage) => stages.push(stage),
     });
-    expect(mock.events.slice(0, 3)).toEqual([
-      "prepare:4",
-      "prepare:2",
-      "prepare:2",
-    ]);
-    expect(mock.events.slice(3)).toEqual([
+    const firstSend = mock.events.findIndex((event) =>
+      event.startsWith("send:"),
+    );
+    expect(
+      mock.events
+        .slice(0, firstSend)
+        .every((event) => event.startsWith("prepare:")),
+    ).toBe(true);
+    expect(mock.events.slice(firstSend)).toEqual([
       "send:source:sheet:0:A1",
       "send:source:sheet:1:A1",
     ]);

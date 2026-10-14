@@ -111,6 +111,48 @@ The adapter estimates the request size per selected sheet. When the size exceeds
 
 The first implementation may ship with whole-sheet chunking only, provided that any single sheet over budget fails with a technical-limit reason rather than a truncated result. The three acceptance fixtures define whether region chunking is needed now.
 
+On 2026-10-14 the user explicitly authorized smaller sequential requests after
+captured real-workbook requests returned 503. This supersedes waiting for task
+6.2 to authorize region implementation; it does not pass that acceptance gate
+or prove that batching cures provider overload. The narrow extension uses:
+
+- An application-local chunk plan with disjoint owned evidence IDs covering the
+  entire selected source exactly once, plus repeated exact context IDs. It
+  preserves source identity, locators, values, links and structural evidence;
+  only local ordering is rebased. Complete row/vertical-merge bands are atomic.
+- Bounded leading rows, adjacent bands, preceding populated column context and
+  transitive parent/header references, without guessing date/header meaning.
+  Every source subset passes the existing source gate and actual envelope
+  budget before any request is sent. Indivisible oversized context fails safely.
+- Default targets of 16 owned evidence units, at most 32 batches and per-batch
+  prepared limits of 64 KB / 16,000 estimated prompt tokens. These are bounded
+  initial operating choices, not accepted provider capacity guarantees.
+- Follow-up user steering prefers explicit visible date sections/columns before
+  structural fallback; a large single Day may still need multiple regions with
+  its original date context. Missing/ambiguous dates are never completed from
+  filenames or hidden years. Shared time axes are owned once and repeated only
+  as exact context, with merge boundaries intact.
+- Response-v2 coverage checked against every submitted ID, then an owned-only
+  global ledger. Repeated context never creates additional coverage. Exact
+  source/meaning matches may rebind relationship context stubs to their owned
+  entities; unmatched/conflicting stubs fail. Context-only reference notes do
+  not duplicate owned content. Matching labels alone never merge events/Days.
+- Unknown-year Day continuation requires a shared specific visible calendar
+  evidence anchor in the same sheet. Reference-only insufficient fragments may
+  contribute their owned source-backed notes to an otherwise valid itinerary;
+  genuine insufficient itinerary content keeps the full outcome insufficient.
+- One complete globally checked candidate, plus focused seam Review when region
+  boundaries require human interpretation. Serial progress stays session-only,
+  does not reset the existing stage/overall watchdogs, and stop/failure never
+  replaces the confirmed trip. No provider/model/Canonical schema change.
+- The user explicitly selected page-memory resume: validated completed neutral
+  responses are retained after failure/timeout/stop for the same selected source.
+  Exact prepared request identity includes model, thinking, prompt/schema and
+  source context, excludes credentials, and must match before cache reuse.
+  Retries revalidate cached responses with fresh workflow/request ownership and
+  credentials. Source/parser/selection changes, explicit clearing and reload
+  invalidate reuse. Checkpoints never enter persistent storage or CanonicalTrip.
+
 ### D6. Supporting `group` is derived deterministically, not by the provider
 After the response passes the gates, each draft supporting item's group is computed from its `source_refs`:
 - **Spreadsheet**: the sheet of its evidence units (id = sheet id, label = sheet name, order = sheet order). Items citing units from more than one sheet get null.

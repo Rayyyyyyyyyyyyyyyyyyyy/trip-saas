@@ -276,7 +276,7 @@ Initial evidence boundary:
 - choose at least one visible sheet in original order before interpretation; hidden sheets never enter extraction or coverage
 - displayed text is authoritative; cached serials and date-system hints cannot supply a year absent from cited display text
 - 128 MiB file, 50,000 evidence-unit and 20 MB source-document technical limits fail explicitly without truncation
-- whole-sheet requests preflight completely and reconcile globally before Review; a single over-budget sheet fails without a provider call until region chunking is justified
+- On 2026-10-14 the user authorized smaller date-first/structural batches after observed 503s. Exact owned/context evidence, complete preflight, memory-only completed-batch resume, and global reconciliation precede Review. A single indivisible region/context over budget fails before calls; batching is not a claim that provider overload or live acceptance is solved.
 - declare spreadsheet support only after Busan, 澎湖 and 名古屋 pass the faithful live rubric independently; successful extraction or a mock response cannot satisfy that gate
 ### Later
 Evidence-driven:

@@ -194,6 +194,32 @@ mislabel flexible or deliberately vague itinerary intent as missing information.
 Structurally malformed output still fails local validation before Review; field
 format validity does not prove source support.
 
+## Batched source scope
+
+When an application-owned `Interpretation batch scope` accompanies the source,
+`owned_source_refs` identifies the content this batch contributes and
+`context_source_refs` identifies repeated original evidence supplied only for
+understanding headers, dates, merges and relationships. Interpret the source
+structure as given; the batch boundary is not a new Day or an itinerary order.
+
+- Account for every submitted evidence unit, owned and context, exactly once
+  in this batch's coverage. The application separately checks owned coverage
+  across the complete source; repeated context does not add content twice.
+- Emit itinerary entities and supporting items for owned content. Do not
+  reproduce unrelated activities or reference notes merely because they occur
+  in context. A context-only entity is allowed only when a relationship in this
+  batch needs it as a member/parent/child; cite its exact original source units
+  and preserve its source-supported meaning. The application must reconcile
+  that reference with an owned entity before any Review result is accepted.
+- Reuse the specific source date/header evidence when a Day continues into
+  another batch. An absent year stays absent. Generic column labels, matching
+  titles and source row order do not prove that two Days or events are equal.
+- Preserve explicit parent timetable, alternative, conditional and sequence
+  relationships. Do not guess cross-batch links or manufacture missing members.
+  Expose unresolved interpretation in findings with the actual source refs.
+- A reference-only batch may be `insufficient` with owned units classified as
+  supporting/unparsed. Do not invent an itinerary entity to make it a draft.
+
 ## Required response gate
 
 Every response must conform to the provider-neutral required schema and include:
